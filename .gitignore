@@ -1,0 +1,9 @@
+# React build
+build/
+node_modules/
+
+# Sensitive files
+.env
+
+# Logs
+*.log
