@@ -7,3 +7,6 @@ node_modules/
 
 # Logs
 *.log
+
+# Explicitly ignore build.zip if it's in the root or elsewhere
+build.zip
