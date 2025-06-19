@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { supabase } from './supabaseClient';
+import { supabase } from './supabaseClient'; // Make sure this path is correct for your project
 
 // Import Font Awesome components
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy } from '@fortawesome/free-solid-svg-icons';
 
-// Inline styles (as before)
+// Inline styles
 const containerStyle = {
     padding: '20px',
-    maxWidth: '800px', // Increased max-width for better layout
+    maxWidth: '1200px', // INCREASED MAX-WIDTH FOR MORE SPACE
     margin: 'auto',
     fontFamily: 'Arial, sans-serif',
     backgroundColor: '#f9f9f9',
@@ -85,7 +85,8 @@ const clearButtonStyle = {
 
 const tableContainerStyle = {
     marginTop: '25px',
-    overflowX: 'auto', // Enable horizontal scrolling for narrow screens
+    // Removed overflowX: 'auto' because you want to avoid horizontal scroll
+    // If content still overflows, consider adjusting column widths or reducing font size
 };
 
 const tableStyle = {
@@ -99,13 +100,13 @@ const thStyle = {
     border: '1px solid #ddd',
     backgroundColor: '#f2f2f2',
     fontWeight: 'bold',
-    whiteSpace: 'nowrap', // Prevent headers from wrapping
+    whiteSpace: 'nowrap', // Prevent headers from wrapping, but now with more space
 };
 
 const tdStyle = {
     padding: '12px',
     border: '1px solid #ddd',
-    whiteSpace: 'nowrap', // Prevent content from wrapping
+    whiteSpace: 'nowrap', // Prevent content from wrapping, but now with more space
 };
 
 const filterButtonContainerStyle = {
@@ -190,12 +191,31 @@ function App() {
     const [results, setResults] = useState([]);
     const [activeSearchType, setActiveSearchType] = useState('phone');
     const [filterStatus, setFilterStatus] = useState('All');
-    const [copiedIndex, setCopiedIndex] = useState(null);
+    const [copiedIndex, setCopiedIndex] = useState(null); // For "Searched Value" column
+    const [copiedEmailIndex, setCopiedEmailIndex] = useState(null); // For "Email" or "Contact No." column
 
     // Helper function to normalize a phone number for comprehensive search
     const normalizePhoneNumber = (num) => {
-        let cleanedNum = num.replace(/[^0-9]/g, ''); // Remove all non-digits
+        // Allow '+' sign in initial cleaning
+        let cleanedNum = num.replace(/[^0-9+]/g, '');
 
+        // If it starts with a '+' (international format)
+        if (cleanedNum.startsWith('+')) {
+            let numWithoutPlus = cleanedNum.substring(1);
+
+            // Attempt to strip common country codes (1, 91) if the result is 10 digits
+            if (numWithoutPlus.startsWith('1') && numWithoutPlus.length === 11) {
+                return numWithoutPlus.substring(1); // e.g., +12125551234 -> 2125551234
+            }
+            if (numWithoutPlus.startsWith('91') && numWithoutPlus.length === 12) {
+                return numWithoutPlus.substring(2); // e.g., +919876543210 -> 9876543210
+            }
+            // For other international numbers starting with '+', return the number without '+'
+            // It will be searched as is in Supabase.
+            return numWithoutPlus;
+        }
+
+        // If it doesn't start with '+', apply previous and new logic
         // Case 1: If it starts with '0' and is 11 digits (e.g., 01234567890)
         if (cleanedNum.startsWith('0') && cleanedNum.length === 11) {
             cleanedNum = cleanedNum.substring(1); // Remove the leading '0'
@@ -204,56 +224,81 @@ function App() {
         else if (cleanedNum.startsWith('91') && cleanedNum.length === 12) {
             cleanedNum = cleanedNum.substring(2); // Remove the leading '91'
         }
-        // Case 3: If it starts with '+91' and is 13 digits (e.g., +911234567890)
-        // This case is covered if it becomes 10 digits after initial removal of '+' and '91'
-        else if (cleanedNum.startsWith('91') && cleanedNum.length === 12) {
-             // No specific action needed as the '91' prefix case will cover this after stripping '+'
+        // Case 3: If it starts with '1' and is 11 digits (e.g., 11234567890 for USA)
+        else if (cleanedNum.startsWith('1') && cleanedNum.length === 11) {
+            cleanedNum = cleanedNum.substring(1); // Remove the leading '1'
         }
 
-
-        // After initial cleaning, ensure it's a 10-digit number for further permutations
+        // After initial cleaning, if it's a 10-digit number, it's our core
         if (cleanedNum.length === 10) {
             return cleanedNum;
         }
-        // If not a standard 10-digit number after basic normalization, return the cleaned version
-        // This handles cases like international numbers that are not +91 or malformed inputs
+
+        // Fallback: return the most cleaned version if not a standard 10-digit
         return cleanedNum;
     };
 
     // Function to perform a single Supabase query
     const performSingleSearch = async (value, type) => {
-        // Always select all relevant fields for display
         let query = supabase.from('students_enrolled_all').select('first_name, last_name, course_fee, email, alternate_email, phone, alternate_phone');
 
         if (type === 'email') {
             query = query.or(`email.eq.${value},alternate_email.eq.${value}`);
         } else if (type === 'phone') {
-            let searchConditions = new Set(); // Use a Set to avoid duplicate conditions
+            let searchConditions = new Set();
+            // Initial cleaning for direct database lookup
+            const originalCleanedValue = value.replace(/[^0-9+]/g, '');
 
-            const normalizedInput = normalizePhoneNumber(value);
-
-            // Add permutations for a 10-digit normalized number
-            if (normalizedInput.length === 10) {
-                searchConditions.add(`phone.eq.${normalizedInput}`); // e.g., 1234567890
-                searchConditions.add(`alternate_phone.eq.${normalizedInput}`);
-
-                searchConditions.add(`phone.eq.${'+91' + normalizedInput}`); // e.g., +911234567890
-                searchConditions.add(`alternate_phone.eq.${'+91' + normalizedInput}`);
-
-                searchConditions.add(`phone.eq.${'0' + normalizedInput}`); // e.g., 01234567890
-                searchConditions.add(`alternate_phone.eq.${'0' + normalizedInput}`);
-
-                searchConditions.add(`phone.eq.${'91' + normalizedInput}`); // e.g., 911234567890
-                searchConditions.add(`alternate_phone.eq.${'91' + normalizedInput}`);
-            } else {
-                // For inputs that don't normalize to 10 digits (e.g., international numbers, malformed)
-                // search for the original cleaned value including '+' if present.
-                const strictCleanedValue = value.replace(/\s/g, ''); // Remove only spaces for non-normalized numbers
-                searchConditions.add(`phone.eq.${strictCleanedValue}`);
-                searchConditions.add(`alternate_phone.eq.${strictCleanedValue}`);
+            // 1. Add the original cleaned value (e.g., '11234567891', '+11234567891', or '1234567890')
+            if (originalCleanedValue) {
+                searchConditions.add(`phone.eq.${originalCleanedValue}`);
+                searchConditions.add(`alternate_phone.eq.${originalCleanedValue}`);
             }
 
-            query = query.or([...searchConditions].join(','));
+            // 2. Normalize the input to a core local number (e.g., 10 digits) if possible
+            const normalizedCoreNumber = normalizePhoneNumber(value);
+
+            // If a 10-digit core number was successfully extracted, generate permutations
+            if (normalizedCoreNumber.length === 10) {
+                // Add the 10-digit core number itself
+                searchConditions.add(`phone.eq.${normalizedCoreNumber}`);
+                searchConditions.add(`alternate_phone.eq.${normalizedCoreNumber}`);
+
+                // Add common international permutations for the 10-digit core
+                searchConditions.add(`phone.eq.${'+1' + normalizedCoreNumber}`);
+                searchConditions.add(`alternate_phone.eq.${'+1' + normalizedCoreNumber}`);
+
+                searchConditions.add(`phone.eq.${'1' + normalizedCoreNumber}`); // e.g., 1 + 10-digit
+                searchConditions.add(`alternate_phone.eq.${'1' + normalizedCoreNumber}`);
+
+                searchConditions.add(`phone.eq.${'+91' + normalizedCoreNumber}`);
+                searchConditions.add(`alternate_phone.eq.${'+91' + normalizedCoreNumber}`);
+
+                searchConditions.add(`phone.eq.${'91' + normalizedCoreNumber}`);
+                searchConditions.add(`alternate_phone.eq.${'91' + normalizedCoreNumber}`);
+
+                searchConditions.add(`phone.eq.${'0' + normalizedCoreNumber}`);
+                searchConditions.add(`alternate_phone.eq.${'0' + normalizedCoreNumber}`);
+            } else if (normalizedCoreNumber) {
+                // If it normalized to something but not 10 digits (e.g., a shorter international number
+                // or a number that couldn't be stripped to 10 digits easily),
+                // add it as a direct match condition if not already covered by originalCleanedValue
+                // (this check prevents redundant adds if originalCleanedValue == normalizedCoreNumber)
+                if (normalizedCoreNumber !== originalCleanedValue) {
+                     searchConditions.add(`phone.eq.${normalizedCoreNumber}`);
+                     searchConditions.add(`alternate_phone.eq.${normalizedCoreNumber}`);
+                }
+            }
+
+            // Remove any empty strings from the set that might occur from initial processing
+            const finalConditions = [...searchConditions].filter(c => c.length > 0);
+
+            if (finalConditions.length > 0) {
+                 query = query.or(finalConditions.join(','));
+            } else {
+                console.warn("No valid phone search conditions generated for:", value);
+                return { value, type, data: [], error: null }; // Return empty data to prevent query with no conditions
+            }
         }
 
         const { data, error } = await query;
@@ -265,7 +310,8 @@ function App() {
         setResults([]);
         setActiveSearchType(type);
         setFilterStatus('All');
-        setCopiedIndex(null);
+        setCopiedIndex(null); // Reset copied state for searched value
+        setCopiedEmailIndex(null); // Reset copied state for email/phone in result column
 
         const valuesToSearch = searchInput.split(/\s+/).map(v => v.trim()).filter(v => v !== '');
 
@@ -298,8 +344,8 @@ function App() {
                         fullName: fullName || 'N/A',
                         courseFees: courseFees,
                         microdegreeStudentStatus: 'Yes student found',
-                        foundEmail: foundItem.email || foundItem.alternate_email || 'N/A', // From DB
-                        foundPhone: foundItem.phone || foundItem.alternate_phone || 'N/A'  // From DB
+                        foundEmail: foundItem.email || foundItem.alternate_email || 'N/A', // Email from DB
+                        foundPhone: foundItem.phone || foundItem.alternate_phone || 'N/A'  // Phone from DB
                     });
                 });
             } else {
@@ -334,10 +380,16 @@ function App() {
         setActiveSearchType('phone');
         setFilterStatus('All');
         setCopiedIndex(null);
+        setCopiedEmailIndex(null);
     };
 
     // Function to handle copying a value with visual feedback
-    const copyToClipboard = (text, index) => {
+    const copyToClipboard = (text, index, type = 'searched') => {
+        // Prevent copying 'N/A', 'Error', or 'Not Found'
+        if (text === 'N/A' || text === 'Error' || text === 'Not Found') {
+            return;
+        }
+
         const textarea = document.createElement('textarea');
         textarea.value = text.trim();
         textarea.style.position = 'fixed';
@@ -347,10 +399,17 @@ function App() {
         textarea.select();
         try {
             document.execCommand('copy');
-            setCopiedIndex(index);
-            setTimeout(() => {
-                setCopiedIndex(null);
-            }, 1500);
+            if (type === 'searched') {
+                setCopiedIndex(index);
+                setTimeout(() => {
+                    setCopiedIndex(null);
+                }, 1500);
+            } else if (type === 'email' || type === 'phone') { // Unified state for the secondary column
+                setCopiedEmailIndex(index); // Using copiedEmailIndex for both email and phone in this column
+                setTimeout(() => {
+                    setCopiedEmailIndex(null);
+                }, 1500);
+            }
         } catch (err) {
             console.error('Failed to copy text:', err);
         }
@@ -367,7 +426,7 @@ function App() {
                     placeholder={
                         activeSearchType === 'email'
                             ? 'Enter emails, space-separated (e.g., email1@example.com email2@example.com)'
-                            : 'Enter contact numbers, space-separated (e.g., 9876543210 +911234567890 01234567890 911234567890)'
+                            : 'Enter contact numbers, space-separated (e.g., 9876543210 +911234567890 01234567890 911234567890 11234567890)'
                     }
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
@@ -392,7 +451,7 @@ function App() {
                 </button>
             </div>
 
-            {results.length > 0 && (
+            {results.length > 0 && ( // Only show filters if there are results
                 <div style={filterButtonContainerStyle}>
                     <span style={filterLabelStyle}>Filter:</span>
                     <button
@@ -416,7 +475,7 @@ function App() {
                 </div>
             )}
 
-            {filteredResults.length > 0 && (
+            {filteredResults.length > 0 && ( // Only show table if there are filtered results
                 <div style={tableContainerStyle}>
                     <table style={tableStyle}>
                         <thead>
@@ -435,15 +494,16 @@ function App() {
                                 <tr key={index}>
                                     <td style={tdStyle}>
                                         {item.value}
-                                        <button
-                                            onClick={() => copyToClipboard(item.value, index)}
-                                            style={copyButtonStyle}
-                                            title="Copy to clipboard"
-                                        >
-                                            <FontAwesomeIcon icon={faCopy} style={{ color: 'black', fontSize: '1.2em' }} />
-                                            {/* Change 'black' to 'blue' or any other color you prefer */}
-                                            {/* Adjust '1.2em' for different icon size */}
-                                        </button>
+                                        {/* Copy button for Searched Value */}
+                                        {item.value !== 'N/A' && item.value !== 'Error' && item.value !== 'Not Found' && (
+                                            <button
+                                                onClick={() => copyToClipboard(item.value, index, 'searched')}
+                                                style={copyButtonStyle}
+                                                title="Copy to clipboard"
+                                            >
+                                                <FontAwesomeIcon icon={faCopy} style={{ color: 'black', fontSize: '1.2em' }} />
+                                            </button>
+                                        )}
                                         {copiedIndex === index && (
                                             <span style={copiedMessageStyle}>Copied!</span>
                                         )}
@@ -462,9 +522,44 @@ function App() {
                                     >
                                         {item.microdegreeStudentStatus}
                                     </td>
-                                    {/* Conditionally display Email or Contact No. data */}
-                                    {activeSearchType === 'phone' && <td style={tdStyle}>{item.foundEmail}</td>}
-                                    {activeSearchType === 'email' && <td style={tdStyle}>{item.foundPhone}</td>}
+                                    {/* Conditionally display Email column (if searching by phone) */}
+                                    {activeSearchType === 'phone' && (
+                                        <td style={tdStyle}>
+                                            {item.foundEmail}
+                                            {/* Copy button for Email, only if a valid email is found */}
+                                            {item.foundEmail !== 'N/A' && item.foundEmail !== 'Error' && item.foundEmail !== 'Not Found' && (
+                                                <button
+                                                    onClick={() => copyToClipboard(item.foundEmail, index, 'email')}
+                                                    style={copyButtonStyle}
+                                                    title="Copy email to clipboard"
+                                                >
+                                                    <FontAwesomeIcon icon={faCopy} style={{ color: 'black', fontSize: '1.2em' }} />
+                                                </button>
+                                            )}
+                                            {copiedEmailIndex === index && (
+                                                <span style={copiedMessageStyle}>Copied!</span>
+                                            )}
+                                        </td>
+                                    )}
+                                    {/* Conditionally display Contact No. column (if searching by email) */}
+                                    {activeSearchType === 'email' && (
+                                        <td style={tdStyle}>
+                                            {item.foundPhone}
+                                            {/* Copy button for Phone, only if a valid phone is found */}
+                                            {item.foundPhone !== 'N/A' && item.foundPhone !== 'Error' && item.foundPhone !== 'Not Found' && (
+                                                <button
+                                                    onClick={() => copyToClipboard(item.foundPhone, index, 'phone')}
+                                                    style={copyButtonStyle}
+                                                    title="Copy phone to clipboard"
+                                                >
+                                                    <FontAwesomeIcon icon={faCopy} style={{ color: 'black', fontSize: '1.2em' }} />
+                                                </button>
+                                            )}
+                                            {copiedEmailIndex === index && (
+                                                <span style={copiedMessageStyle}>Copied!</span>
+                                            )}
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                         </tbody>
