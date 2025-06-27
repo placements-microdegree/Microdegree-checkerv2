@@ -314,6 +314,7 @@ function App() {
         setCopiedEmailIndex(null); // Reset copied state for email/phone in result column
 
         const valuesToSearch = searchInput.split(/\s+/).map(v => v.trim()).filter(v => v !== '');
+        console.log("value to search"+valuesToSearch)
 
         if (valuesToSearch.length === 0) {
             return;
