@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient'; // Make sure this path is correct for your project
 
 // Import Font Awesome components
@@ -187,6 +187,25 @@ const copiedMessageStyle = {
 
 
 function App() {
+    const [isAuthenticated, setIsAuthenticated] = useState(null); // ✅ track auth status
+
+    useEffect(() => {
+        async function checkSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                // Redirect to login page if not logged in
+                window.location.href = 'https://tools.microdegree.in';
+            } else {
+                setIsAuthenticated(true);
+            }
+        }
+        checkSession();
+    }, []);
+
+    if (isAuthenticated === null) {
+        return <div>Checking authentication...</div>; // Loading state
+    }
+    
     const [searchInput, setSearchInput] = useState('');
     const [results, setResults] = useState([]);
     const [activeSearchType, setActiveSearchType] = useState('phone');
