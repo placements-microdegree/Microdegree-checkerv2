@@ -189,6 +189,13 @@ const copiedMessageStyle = {
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(null); // ✅ track auth status
 
+    const [searchInput, setSearchInput] = useState('');
+    const [results, setResults] = useState([]);
+    const [activeSearchType, setActiveSearchType] = useState('phone');
+    const [filterStatus, setFilterStatus] = useState('All');
+    const [copiedIndex, setCopiedIndex] = useState(null); // For "Searched Value" column
+    const [copiedEmailIndex, setCopiedEmailIndex] = useState(null);
+
     useEffect(() => {
         async function checkSession() {
             const { data: { session } } = await supabase.auth.getSession();
@@ -205,13 +212,6 @@ function App() {
     if (isAuthenticated === null) {
         return <div>Checking authentication...</div>; // Loading state
     }
-    
-    const [searchInput, setSearchInput] = useState('');
-    const [results, setResults] = useState([]);
-    const [activeSearchType, setActiveSearchType] = useState('phone');
-    const [filterStatus, setFilterStatus] = useState('All');
-    const [copiedIndex, setCopiedIndex] = useState(null); // For "Searched Value" column
-    const [copiedEmailIndex, setCopiedEmailIndex] = useState(null); // For "Email" or "Contact No." column
 
     // Helper function to normalize a phone number for comprehensive search
     const normalizePhoneNumber = (num) => {
