@@ -201,7 +201,7 @@ function App() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
                 // Redirect to login page if not logged in
-                window.location.href = 'https://tools.microdegree.in';
+                window.location.href = 'https://checker.tools.microdegree.in';
             } else {
                 setIsAuthenticated(true);
             }
