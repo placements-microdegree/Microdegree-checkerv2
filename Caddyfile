@@ -1,0 +1,4 @@
+checker.tools.microdegree.in
+
+root * /usr/share/caddy
+file_server

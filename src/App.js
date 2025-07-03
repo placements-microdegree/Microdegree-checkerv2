@@ -162,7 +162,7 @@ const activeFilterNoStyle = {
 };
 
 const inactiveFilterButtonStyle = {
-    ...baseFilterButtonStyle,
+    ...baseButtonStyle, // Changed from baseFilterButtonStyle for consistency
     backgroundColor: '#f8f9fa',
     color: '#333',
     borderColor: '#ced4da',
@@ -200,8 +200,10 @@ function App() {
         async function checkSession() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
-                // Redirect to login page if not logged in
-                window.location.href = 'https://checker.tools.microdegree.in';
+                // Temporarily commented out for local development
+                // window.location.href = 'https://checker.tools.microdegree.in';
+                console.log("Not authenticated. Redirect prevented for local development.");
+                setIsAuthenticated(true); // Explicitly set to false if no session
             } else {
                 setIsAuthenticated(true);
             }
@@ -210,9 +212,22 @@ function App() {
     }, []);
 
     if (isAuthenticated === null) {
-        return <div>Checking authentication...</div>; // Loading state
+        return <div>Checking authentication...</div>; // Loading state while checking session
     }
 
+    if (!isAuthenticated) {
+        return (
+            <div style={containerStyle}>
+                <h2 style={headerStyle}>Please log in to Microdegree Checker</h2>
+                <p style={{ textAlign: 'center', color: '#666' }}>
+                    For local development, the automatic redirect to the login page is temporarily disabled.
+                    <br />
+                    Please ensure your Supabase configuration (`supabaseClient.js`) is correct and that you have a way to authenticate locally (e.g., through Supabase's local development setup or by manually setting a session if testing UI components).
+                </p>
+                {/* You might add a local login form or instructions here later */}
+            </div>
+        );
+    }
     // Helper function to normalize a phone number for comprehensive search
     const normalizePhoneNumber = (num) => {
         // Allow '+' sign in initial cleaning
@@ -304,8 +319,8 @@ function App() {
                 // add it as a direct match condition if not already covered by originalCleanedValue
                 // (this check prevents redundant adds if originalCleanedValue == normalizedCoreNumber)
                 if (normalizedCoreNumber !== originalCleanedValue) {
-                     searchConditions.add(`phone.eq.${normalizedCoreNumber}`);
-                     searchConditions.add(`alternate_phone.eq.${normalizedCoreNumber}`);
+                    searchConditions.add(`phone.eq.${normalizedCoreNumber}`);
+                    searchConditions.add(`alternate_phone.eq.${normalizedCoreNumber}`);
                 }
             }
 
@@ -313,7 +328,7 @@ function App() {
             const finalConditions = [...searchConditions].filter(c => c.length > 0);
 
             if (finalConditions.length > 0) {
-                 query = query.or(finalConditions.join(','));
+                query = query.or(finalConditions.join(','));
             } else {
                 console.warn("No valid phone search conditions generated for:", value);
                 return { value, type, data: [], error: null }; // Return empty data to prevent query with no conditions
