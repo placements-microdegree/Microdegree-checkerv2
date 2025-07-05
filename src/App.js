@@ -201,9 +201,11 @@ function App() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
                 // Temporarily commented out for local development
-                // window.location.href = 'https://checker.tools.microdegree.in';
-                console.log("Not authenticated. Redirect prevented for local development.");
-                setIsAuthenticated(true); // Explicitly set to false if no session
+                //window.location.href = 'https://checker.tools.microdegree.in';
+
+                // window.location.href = 'https://tools.microdegree.in';
+                // console.log("Not authenticated. Redirect prevented for local development.");....
+                setIsAuthenticated(true); // Explicitly set to false if no session.....
             } else {
                 setIsAuthenticated(true);
             }
@@ -348,7 +350,7 @@ function App() {
         setCopiedEmailIndex(null); // Reset copied state for email/phone in result column
 
         const valuesToSearch = searchInput.split(/\s+/).map(v => v.trim()).filter(v => v !== '');
-        console.log("value to search"+valuesToSearch)
+        console.log("value to search" + valuesToSearch)
 
         if (valuesToSearch.length === 0) {
             return;
