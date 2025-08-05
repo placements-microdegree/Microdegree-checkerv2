@@ -619,13 +619,26 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import Checking from './Checking';
 
+import ProtectedRoute from './ProtectedRoute';
+
 function App() {
   return (
     
         
+      // <Routes>
+      //   <Route path="/" element={<Dashboard />} />
+      //   <Route path="/checking" element={<Checking />} />
+      // </Routes>
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/checking" element={<Checking />} />
+        <Route
+          path="/checking"
+          element={
+            <ProtectedRoute>
+              <Checking />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
       
   )
