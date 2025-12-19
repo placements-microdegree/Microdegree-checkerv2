@@ -16,6 +16,7 @@ const ALLOWED_EMAILS = new Set(
     "yashas@microdegree.work",
     "karthikacharya246@gmail.com",
     "karansshetty6@gmail.com",
+    "prajneshpajju094@gmail.com",
   ].map((e) => e.trim().toLowerCase())
 );
 
