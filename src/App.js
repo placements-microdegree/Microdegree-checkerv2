@@ -618,8 +618,8 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import Checking from './Checking';
-
 import ProtectedRoute from './ProtectedRoute';
+import './App.css';
 
 function App() {
   return (

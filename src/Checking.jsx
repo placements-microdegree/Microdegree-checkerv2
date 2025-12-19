@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabaseClient'; // Make sure this path is correct for your project
 
 // Import Font Awesome components
@@ -7,13 +7,13 @@ import { faCopy } from '@fortawesome/free-solid-svg-icons';
 
 // Inline styles
 const containerStyle = {
-    padding: '28px 28px 36px 28px',
-    maxWidth: '1200px', // INCREASED MAX-WIDTH FOR MORE SPACE
-    margin: '28px auto',
+    padding: '16px 0 24px 0',
+    width: '100%',
+    margin: 0,
     fontFamily: 'Inter, Arial, sans-serif',
     backgroundColor: '#f5f7fb',
-    borderRadius: '12px',
-    boxShadow: '0 6px 24px rgba(16,24,40,0.06)',
+    boxSizing: 'border-box',
+    overflowX: 'hidden',
 };
 
 const headerStyle = {
@@ -36,6 +36,8 @@ const inputSectionStyle = {
     padding: '20px',
     borderRadius: '8px',
     boxShadow: '0 1px 5px rgba(0,0,0,0.05)',
+    width: '100%',
+    boxSizing: 'border-box',
 };
 
 const textareaStyle = {
@@ -93,12 +95,13 @@ const clearButtonStyle = {
 };
 
 const tableContainerStyle = {
-    marginTop: '25px',
+   
     overflowX: 'auto',
     backgroundColor: 'white',
     padding: '8px',
     borderRadius: '8px',
     boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+    boxSizing: 'border-box',
 };
 
 const tableStyle = {
@@ -106,6 +109,127 @@ const tableStyle = {
     borderCollapse: 'collapse',
     textAlign: 'left',
     minWidth: '800px',
+};
+
+const mainContentWrapperStyle = {
+    display: 'flex',
+    gap: '20px',
+    alignItems: 'flex-start',
+    flexWrap: 'nowrap',
+    width: '100%',
+};
+
+const sidebarContainerStyle = {
+    flex: '0 0 320px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+    position: 'sticky',
+    top: '20px',
+    transition: 'all 0.25s ease',
+};
+
+/* eslint-disable no-unused-vars */
+const sidebarSectionStyle = {
+    backgroundColor: 'white',
+    borderRadius: '10px',
+    padding: '16px',
+    boxShadow: '0 1px 5px rgba(0,0,0,0.05)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+};
+
+const sidebarSectionHeaderStyle = {
+    fontWeight: 700,
+    fontSize: '1rem',
+    color: '#0f172a',
+};
+
+const unifiedFilterPanelStyle = {
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    padding: '18px',
+    boxShadow: '0 1px 6px rgba(0,0,0,0.06)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '18px',
+};
+
+const filterGroupSectionStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    borderBottom: '1px solid #f1f5f9',
+    paddingBottom: '14px',
+};
+
+const courseFilterFieldsWrapperStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '14px',
+};
+
+const resultsPanelWrapperStyle = {
+    flex: 1,
+    minWidth: 0,
+    transition: 'all 0.25s ease',
+};
+
+const filterToggleBarStyle = {
+    display: 'flex',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    gap: '12px',
+    position: 'relative',
+    marginBottom: '10px',
+};
+
+const filtersDrawerToggleButtonStyle = {
+    ...baseButtonStyle,
+    padding: '6px 10px',
+    fontSize: '0.85rem',
+};
+
+const scrollableResultsContainerStyle = {
+    ...tableContainerStyle,
+    maxWidth: '100%',
+};
+
+const emptyResultsStyle = {
+    ...tableContainerStyle,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '240px',
+    color: '#6b7280',
+    fontWeight: 600,
+};
+
+const statusFilterRowStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap',
+};
+
+const statusSummaryInlineStyle = {
+    fontSize: '0.85rem',
+    color: '#64748b',
+    whiteSpace: 'nowrap',
+};
+
+const filterToggleSummaryCenterStyle = {
+    ...statusSummaryInlineStyle,
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    transform: 'translate(-50%, -50%)',
+    maxWidth: '70%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    pointerEvents: 'none',
 };
 
 const thStyle = {
@@ -139,6 +263,15 @@ const filterButtonContainerStyle = {
     backgroundColor: 'white',
     borderRadius: '8px',
     boxShadow: '0 1px 5px rgba(0,0,0,0.05)',
+};
+
+const statusFilterButtonContainerStyle = {
+    ...filterButtonContainerStyle,
+    justifyContent: 'flex-start',
+    marginBottom: 0,
+    padding: 0,
+    border: 'none',
+    boxShadow: 'none',
 };
 
 const filterLabelStyle = {
@@ -183,6 +316,30 @@ const inactiveFilterButtonStyle = {
     backgroundColor: '#f8f9fa',
     color: '#333',
     borderColor: '#ced4da',
+};
+
+const pillButtonBaseStyle = {
+    padding: '6px 12px',
+    borderRadius: '999px',
+    border: '1px solid #2563eb',
+    backgroundColor: '#ffffff',
+    color: '#2563eb',
+    fontSize: '0.85rem',
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease',
+};
+
+const pillButtonSelectedStyle = {
+    ...pillButtonBaseStyle,
+    backgroundColor: '#2563eb',
+    color: '#ffffff',
+};
+
+const pillRowStyle = {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
 };
 
 const dateFilterWrapperStyle = {
@@ -345,6 +502,7 @@ const filterSubResetRowStyle = {
     justifyContent: 'flex-end',
     marginTop: '4px',
 };
+/* eslint-enable no-unused-vars */
 
 const copyButtonStyle = {
     marginLeft: '8px',
@@ -370,6 +528,7 @@ const validationMessageStyle = {
     marginTop: '10px',
 };
 
+/* CSV upload styles (temporarily disabled)
 const csvUploadSectionStyle = {
     display: 'flex',
     flexDirection: 'column',
@@ -378,6 +537,8 @@ const csvUploadSectionStyle = {
     border: '1px dashed #ced4da',
     borderRadius: '6px',
     backgroundColor: '#fdfdfd',
+    width: '100%',
+    boxSizing: 'border-box',
 };
 
 const csvStatusTextStyle = {
@@ -385,41 +546,90 @@ const csvStatusTextStyle = {
     color: '#0056b3',
     fontWeight: 'bold',
 };
+*/
 
 const formSectionStyle = {
-    marginTop: '20px',
-    padding: '20px',
+    width: '96%',
+    maxWidth: '1100px',
+    margin: 0,
+    padding: '14px 14px 12px',
     backgroundColor: 'white',
+    borderRadius: '10px',
+    border: '1px solid #eef3fb',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.12)',
+    boxSizing: 'border-box',
+    position: 'relative',
+};
+
+const formModalHeaderStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '10px',
+    marginBottom: '10px',
+};
+
+const formModalTitleStyle = {
+    margin: 0,
+    fontSize: '16px',
+    fontWeight: 700,
+    color: '#0f172a',
+    lineHeight: 1.2,
+};
+
+const formModalCloseButtonStyle = {
+    border: '1px solid #e6eef8',
+    background: '#ffffff',
+    color: '#0f172a',
+    cursor: 'pointer',
+    width: '30px',
+    height: '30px',
     borderRadius: '8px',
-    boxShadow: '0 1px 5px rgba(0,0,0,0.05)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '18px',
+    lineHeight: 1,
+    padding: 0,
 };
 
 const formGridStyle = {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: '15px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: '10px 12px',
 };
 
 const formFieldStyle = {
     display: 'flex',
     flexDirection: 'column',
-    gap: '5px',
+    gap: '4px',
+    fontSize: '0.85rem',
+    color: '#0f172a',
 };
 
 const formInputStyle = {
     padding: '10px 12px',
+    height: '42px',
+    lineHeight: '20px',
     borderRadius: '8px',
-    border: '1px solid #e6eef8',
-    fontSize: '15px',
-    backgroundColor: '#ffffff'
+    border: '1px solid #000000',
+    fontSize: '14px',
+    backgroundColor: '#ffffff',
+    color: '#000000',
+    boxSizing: 'border-box',
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
 };
 
 const formSubmitButtonStyle = {
     ...baseButtonStyle,
     backgroundColor: '#16a34a',
     color: 'white',
-    marginTop: '15px',
-    minWidth: '180px',
+    marginTop: '10px',
+    minWidth: '150px',
+    padding: '7px 12px',
+    fontSize: '13px',
 };
 
 const selectionBarStyle = {
@@ -447,7 +657,7 @@ const formStatusStyle = {
 
 const errorTextStyle = {
     color: '#dc3545',
-    fontSize: '0.85rem',
+    fontSize: '0.75rem',
 };
 
 const addStudentButtonStyle = {
@@ -461,7 +671,7 @@ const modalOverlayStyle = {
     position: 'fixed',
     top: 0,
     left: 0,
-    width: '100vw',
+    width: '100%',
     height: '100vh',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     display: 'flex',
@@ -482,16 +692,7 @@ const modalContentStyle = {
     boxShadow: '0 10px 30px rgba(0,0,0,0.12)',
 };
 
-const modalCloseButtonStyle = {
-    position: 'absolute',
-    top: '10px',
-    right: '10px',
-    border: 'none',
-    background: 'transparent',
-    fontSize: '20px',
-    cursor: 'pointer',
-};
-
+// eslint-disable-next-line no-unused-vars
 const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function Checking() {
@@ -504,10 +705,12 @@ function Checking() {
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [copiedEmailIndex, setCopiedEmailIndex] = useState(null);
     const [validationMessage, setValidationMessage] = useState('');
+    /* eslint-disable no-unused-vars */
     const [csvPhoneNumbers, setCsvPhoneNumbers] = useState([]);
     const [csvStatusMessage, setCsvStatusMessage] = useState('');
     const [isCsvProcessing, setIsCsvProcessing] = useState(false);
-    const [csvFileName, setCsvFileName] = useState(''); 
+    const [csvFileName, setCsvFileName] = useState('');
+    /* eslint-enable no-unused-vars */
     const [formData, setFormData] = useState({
         id: '',
         createdAt: '',
@@ -534,8 +737,11 @@ function Checking() {
     // Email selection + sending state
     const [selectedEmails, setSelectedEmails] = useState(new Set());
     const [emailSubject, setEmailSubject] = useState('');
+    const [emailReplyTo, setEmailReplyTo] = useState('');
+    const didUserTouchReplyToRef = useRef(false);
     const [emailBody, setEmailBody] = useState('');
     const [emailAttachments, setEmailAttachments] = useState([]);
+    const [senderEmail, setSenderEmail] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [isEmailModalVisible, setIsEmailModalVisible] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
@@ -547,10 +753,10 @@ function Checking() {
     const [debugResults, setDebugResults] = useState([]);
     // eslint-disable-next-line no-unused-vars
     const [isDebugging, setIsDebugging] = useState(false);
-    const [joiningDateFilters, setJoiningDateFilters] = useState({ day: '', month: '', year: '' });
-    const [courseFilters, setCourseFilters] = useState({ coursePlan: '', location: '', courseType1: '', courseType: '' });
-    const [expandedFilterMenu, setExpandedFilterMenu] = useState('');
-    const [expandedSubmenus, setExpandedSubmenus] = useState({ joining: '', course: '' });
+    const [isFetching, setIsFetching] = useState(false);
+    const [joiningDateRange, setJoiningDateRange] = useState({ from: '', to: '' });
+    const [courseFilters, setCourseFilters] = useState({ coursePlan: [], location: [], courseType1: [] });
+    const [areFiltersOpen, setAreFiltersOpen] = useState(true);
 
     useEffect(() => {
         async function checkSession() {
@@ -566,7 +772,38 @@ function Checking() {
         checkSession();
     }, []);
 
-    if (!isAuthenticated) {
+    useEffect(() => {
+        if (!isEmailModalVisible) return;
+
+        // When opening the modal, treat Reply-To as untouched until the user edits it.
+        didUserTouchReplyToRef.current = false;
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const resp = await fetch('http://localhost:5000/email-config');
+                const data = await resp.json();
+                if (cancelled) return;
+                setSenderEmail((data && data.senderEmail) ? String(data.senderEmail) : '');
+                const nextDefaultReplyTo = (data && data.defaultReplyToEmail) ? String(data.defaultReplyToEmail) : '';
+
+                // Prefill Reply-To with the configured default, unless the user already started editing.
+                if (!didUserTouchReplyToRef.current) {
+                    setEmailReplyTo(nextDefaultReplyTo);
+                }
+            } catch (e) {
+                if (cancelled) return;
+                setSenderEmail('');
+                if (!didUserTouchReplyToRef.current) {
+                    setEmailReplyTo('');
+                }
+            }
+        })();
+
+        return () => { cancelled = true; };
+    }, [isEmailModalVisible]);
+
+    if (isAuthenticated===false) {
         return (
             <div style={containerStyle}>
                 <h2 style={headerStyle}>Please log in to Microdegree Checking</h2>
@@ -616,6 +853,27 @@ function Checking() {
         if (normalized) return normalized;
         const digits = stripToDigits(strValue);
         return digits || 'no-phone';
+    };
+
+    const normalizeEmailKey = (email) => {
+        const key = toComparableString(email).trim().toLowerCase();
+        if (!key) return '';
+        if (key === 'n/a' || key === 'error' || key === 'not found') return '';
+        return key;
+    };
+
+    const buildSearchedValueKey = (type, searchedValue) => {
+        if (type === 'phone') return buildPhoneKey(searchedValue);
+        return toComparableString(searchedValue).trim().toLowerCase();
+    };
+
+    const buildStableResultDedupeKey = (type, item) => {
+        const statusKey = toComparableString(item?.microdegreeStudentStatus).trim().toLowerCase();
+        const searchedKey = buildSearchedValueKey(type, item?.value);
+        const emailKey = normalizeEmailKey(item?.foundEmail);
+        const phoneKey = buildPhoneKey(item?.foundPhone);
+        const contactKey = emailKey || phoneKey || 'no-contact';
+        return `${statusKey}::${searchedKey}::${contactKey}`;
     };
 
     // Lightweight CSV row parser that respects quoted values and double-quotes
@@ -678,6 +936,7 @@ function Checking() {
         return `${cleanT}::${cleanV || 'empty'}::${cleanS || 'x'}`;
     };
 
+    // eslint-disable-next-line no-unused-vars
     const extractPhoneNumbersFromText = (text) => {
         const rows = text.split(/\r?\n/);
         const headerRow = parseCsvRow(rows[0]);
@@ -711,7 +970,7 @@ function Checking() {
         if (value === null || value === undefined) return null;
         const normalized = value.toString().trim();
         if (!normalized) return null;
-        const isoMatch = normalized.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+        const isoMatch = normalized.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
         if (isoMatch) {
             return {
                 year: Number(isoMatch[1]),
@@ -739,45 +998,57 @@ function Checking() {
         return { raw, display, parts };
     };
 
-    const computeJoiningDateOptions = (items) => {
-        const daySet = new Set();
-        const monthSet = new Set();
-        const yearSet = new Set();
-        items.forEach(item => {
-            const parts = item?.joiningDateParts;
-            if (!parts) return;
-            if (parts.day) daySet.add(parts.day);
-            if (parts.month) monthSet.add(parts.month);
-            if (parts.year) yearSet.add(parts.year);
-        });
-        const sortNumeric = (list) => Array.from(list).sort((a, b) => a - b);
-        return {
-            days: sortNumeric(daySet),
-            months: sortNumeric(monthSet),
-            years: sortNumeric(yearSet),
-        };
+    const addMonthsClamped = (date, monthsToAdd) => {
+        const base = new Date(date.getTime());
+        const originalDay = base.getDate();
+        base.setDate(1);
+        base.setMonth(base.getMonth() + monthsToAdd);
+        const lastDayOfTargetMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+        base.setDate(Math.min(originalDay, lastDayOfTargetMonth));
+        return base;
+    };
+
+    const computeSessionMeta = (item) => {
+        const parts = item?.joiningDateParts;
+        if (!parts || !parts.year || !parts.month || !parts.day) {
+            return { label: 'N/A', color: 'gray' };
+        }
+
+        const joiningDate = new Date(parts.year, parts.month - 1, parts.day);
+        if (Number.isNaN(joiningDate.getTime())) {
+            return { label: 'N/A', color: 'gray' };
+        }
+
+        const plan = (item?.coursePlan || '').toString().trim().toLowerCase();
+        const validityMonths = plan === 'titanium plus' ? 18 : 12;
+        const expiryDate = addMonthsClamped(joiningDate, validityMonths);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        expiryDate.setHours(0, 0, 0, 0);
+
+        const isActive = today <= expiryDate;
+        return { label: isActive ? 'Active' : 'Expired', color: isActive ? 'green' : 'red' };
     };
 
     const computeCourseFilterOptions = (items) => {
         const planSet = new Set();
         const locationSet = new Set();
-        const courseTypeSet = new Set();
         const courseType1Set = new Set();
         items.forEach(item => {
             if (item.coursePlan) planSet.add(item.coursePlan);
             if (item.location) locationSet.add(item.location);
-            if (item.courseType) courseTypeSet.add(item.courseType);
             if (item.courseType1) courseType1Set.add(item.courseType1);
         });
         const sortAlpha = (set) => Array.from(set).sort((a, b) => a.localeCompare(b));
         return {
             plans: sortAlpha(planSet),
             locations: sortAlpha(locationSet),
-            courseTypes: sortAlpha(courseTypeSet),
             courseType1Values: sortAlpha(courseType1Set),
         };
     };
 
+    // eslint-disable-next-line no-unused-vars
     const formatCountMessage = (count) => {
         if (count === 0) {
             return 'No phone numbers detected in the uploaded CSV.';
@@ -992,266 +1263,288 @@ function Checking() {
         }
 
         setValidationMessage('');
+        setIsFetching(true);
+        try {
+            if (type === 'phone') {
+                const seenPhoneEntries = new Set();
+                const allProcessedResults = [];
 
-        if (type === 'phone') {
-            const seenPhoneEntries = new Set();
-            let allProcessedResults = [];
-
-            for (const value of valuesToSearch) {
-                const { data, error } = await performSingleSearch(value, type);
-                try {
-                    console.debug('performSingleSearch result', { value, error: error ? true : false, dataLength: Array.isArray(data) ? data.length : 0 });
-                } catch (e) {}
-
-                if (error) {
-                    allProcessedResults.push({
-                        id: createResultId(type, value, 'error'),
-                        value: value,
-                        fullName: 'Error fetching data',
-                        courseFees: 'Error',
-                        microdegreeStudentStatus: 'Not a student',
-                        foundEmail: 'Error',
-                        foundPhone: 'Error',
-                        courseType: 'N/A',
-                        courseType1: '',
-                        coursePlan: 'N/A',
-                        location: 'N/A',
-                        joiningDate: '',
-                        joiningDateDisplay: 'N/A',
-                        joiningDateParts: null,
-                    });
-                } else if (data && data.length > 0) {
-                    data.forEach(foundItem => {
-                        const fullName = `${foundItem.first_name || ''} ${foundItem.last_name || ''}`.trim();
-                        const courseFees = foundItem.course_fee !== null ? foundItem.course_fee : 'N/A';
-                        const primaryEmail = foundItem.email || foundItem.alternate_email || 'N/A';
-                        const courseType = foundItem.course_type || '';
-                        const courseType1 = foundItem.course_type_1 || '';
-                        const coursePlan = foundItem.course_plan || '';
-                        const location = foundItem.location || '';
-                        const joiningDateMeta = buildJoiningDateMeta(foundItem.date);
-                        const baseResult = {
-                            value: value,
-                            fullName: fullName || 'N/A',
-                            courseFees: courseFees,
-                            microdegreeStudentStatus: 'Yes student found',
-                            foundEmail: primaryEmail,
-                            courseType,
-                            courseType1,
-                            coursePlan: coursePlan || 'N/A',
-                            location: location || 'N/A',
-                            joiningDate: joiningDateMeta.raw,
-                            joiningDateDisplay: joiningDateMeta.display,
-                            joiningDateParts: joiningDateMeta.parts,
-                        };
-
-                        const uniquePhones = getUniquePhoneNumbers(foundItem.phone, foundItem.alternate_phone);
-                        const identifierParts = [
-                            (primaryEmail || '').toLowerCase(),
-                            (foundItem.first_name || '').toLowerCase(),
-                            (foundItem.last_name || '').toLowerCase()
-                        ];
-                        const studentIdentifier = identifierParts.join('::') || 'student';
-
-                        if (uniquePhones.length === 0) {
-                            const dedupKey = `${studentIdentifier}::no-phone`;
-                            if (!seenPhoneEntries.has(dedupKey)) {
-                                seenPhoneEntries.add(dedupKey);
-                                allProcessedResults.push({
-                                    ...baseResult,
-                                    id: createResultId(type, value, 'no-phone'),
-                                    foundPhone: 'N/A'
-                                });
-                            }
-                            return;
-                        }
-
-                        uniquePhones.forEach(phoneNumber => {
-                            const phoneKey = buildPhoneKey(phoneNumber);
-                            const dedupKey = `${studentIdentifier}::${phoneKey}`;
-                            if (!seenPhoneEntries.has(dedupKey)) {
-                                seenPhoneEntries.add(dedupKey);
-                                allProcessedResults.push({
-                                    ...baseResult,
-                                    id: createResultId(type, value, phoneKey || 'phone'),
-                                    foundPhone: phoneNumber
-                                });
-                            }
+                for (const value of valuesToSearch) {
+                    const { data, error } = await performSingleSearch(value, type);
+                    try {
+                        console.debug('performSingleSearch result', {
+                            value,
+                            error: error ? true : false,
+                            dataLength: Array.isArray(data) ? data.length : 0,
                         });
-                    });
-                } else {
-                    allProcessedResults.push({
-                        id: createResultId(type, value, 'not-found'),
-                        value: value,
-                        fullName: 'Not Found',
-                        courseFees: 'Not Found',
-                        microdegreeStudentStatus: 'Not a student',
-                        foundEmail: 'Not Found',
-                        foundPhone: 'Not Found',
-                        courseType: 'N/A',
-                        courseType1: '',
-                        coursePlan: 'N/A',
-                        location: 'N/A',
-                        joiningDate: '',
-                        joiningDateDisplay: 'N/A',
-                        joiningDateParts: null,
-                    });
-                }
-            }
+                    } catch (e) {}
 
-            // Deduplicate results by email + normalized phone + name
-            const uniqueResults = [];
-            const seenKeys = new Set();
-            allProcessedResults.forEach(item => {
-                const emailKey = (item.foundEmail || '').toString().toLowerCase();
-                const phoneKey = buildPhoneKey(item.foundPhone || '');
-                const nameKey = (item.fullName || '').toString().toLowerCase();
-                const dedupeKey = `${emailKey}::${phoneKey}::${nameKey}`;
-                if (!seenKeys.has(dedupeKey)) {
+                    if (error) {
+                        allProcessedResults.push({
+                            id: createResultId(type, value, 'error'),
+                            value: value,
+                            fullName: 'Error fetching data',
+                            courseFees: 'Error',
+                            microdegreeStudentStatus: 'Not a student',
+                            foundEmail: 'Error',
+                            foundPhone: 'Error',
+                            courseType: 'N/A',
+                            courseType1: '',
+                            coursePlan: 'N/A',
+                            location: 'N/A',
+                            joiningDate: '',
+                            joiningDateDisplay: 'N/A',
+                            joiningDateParts: null,
+                        });
+                        continue;
+                    }
+
+                    if (data && data.length > 0) {
+                        data.forEach((foundItem) => {
+                            const fullName = `${foundItem.first_name || ''} ${foundItem.last_name || ''}`.trim();
+                            const courseFees = foundItem.course_fee !== null ? foundItem.course_fee : 'N/A';
+                            const primaryEmail = foundItem.email || foundItem.alternate_email || 'N/A';
+                            const courseType = foundItem.course_type || '';
+                            const courseType1 = foundItem.course_type_1 || '';
+                            const coursePlan = foundItem.course_plan || '';
+                            const location = foundItem.location || '';
+                            const joiningDateMeta = buildJoiningDateMeta(foundItem.date);
+                            const baseResult = {
+                                value: value,
+                                fullName: fullName || 'N/A',
+                                courseFees: courseFees,
+                                microdegreeStudentStatus: 'Yes student found',
+                                foundEmail: primaryEmail,
+                                courseType,
+                                courseType1,
+                                coursePlan: coursePlan || 'N/A',
+                                location: location || 'N/A',
+                                joiningDate: joiningDateMeta.raw,
+                                joiningDateDisplay: joiningDateMeta.display,
+                                joiningDateParts: joiningDateMeta.parts,
+                            };
+
+                            const uniquePhones = getUniquePhoneNumbers(foundItem.phone, foundItem.alternate_phone);
+                            const identifierParts = [
+                                (primaryEmail || '').toLowerCase(),
+                                (foundItem.first_name || '').toLowerCase(),
+                                (foundItem.last_name || '').toLowerCase(),
+                            ];
+                            const studentIdentifier = identifierParts.join('::') || 'student';
+
+                            if (uniquePhones.length === 0) {
+                                const dedupKey = `${studentIdentifier}::no-phone`;
+                                if (!seenPhoneEntries.has(dedupKey)) {
+                                    seenPhoneEntries.add(dedupKey);
+                                    allProcessedResults.push({
+                                        ...baseResult,
+                                        id: createResultId(type, value, 'no-phone'),
+                                        foundPhone: 'N/A',
+                                    });
+                                }
+                                return;
+                            }
+
+                            uniquePhones.forEach((phoneNumber) => {
+                                const phoneKey = buildPhoneKey(phoneNumber);
+                                const dedupKey = `${studentIdentifier}::${phoneKey}`;
+                                if (!seenPhoneEntries.has(dedupKey)) {
+                                    seenPhoneEntries.add(dedupKey);
+                                    allProcessedResults.push({
+                                        ...baseResult,
+                                        id: createResultId(type, value, phoneKey || 'phone'),
+                                        foundPhone: phoneNumber,
+                                    });
+                                }
+                            });
+                        });
+                    } else {
+                        const notFoundKey = `not-found::${buildPhoneKey(value)}`;
+                        if (!seenPhoneEntries.has(notFoundKey)) {
+                            seenPhoneEntries.add(notFoundKey);
+                            allProcessedResults.push({
+                                id: createResultId(type, value, 'not-found'),
+                                value,
+                                fullName: 'Not Found',
+                                courseFees: 'Not Found',
+                                microdegreeStudentStatus: 'Not a student',
+                                foundEmail: 'Not Found',
+                                foundPhone: 'Not Found',
+                                courseType: 'N/A',
+                                courseType1: '',
+                                coursePlan: 'N/A',
+                                location: 'N/A',
+                                joiningDate: '',
+                                joiningDateDisplay: 'N/A',
+                                joiningDateParts: null,
+                            });
+                        }
+                    }
+                }
+
+                // Deduplicate using stable key so Status Filter only filters existing rows
+                const uniqueResults = [];
+                const seenKeys = new Set();
+                allProcessedResults.forEach((item) => {
+                    const dedupeKey = buildStableResultDedupeKey(type, item);
+                    if (seenKeys.has(dedupeKey)) return;
                     seenKeys.add(dedupeKey);
                     uniqueResults.push(item);
+                });
+
+                setResults(uniqueResults);
+
+                // Validation: report any searched values not found in results
+                const missingNumbers = [];
+                valuesToSearch.forEach((v) => {
+                    const key = buildPhoneKey(v || '');
+                    const foundInResults = uniqueResults.some(
+                        (r) => buildPhoneKey(r.foundPhone || '') === key || buildPhoneKey(r.value || '') === key
+                    );
+                    if (!foundInResults) missingNumbers.push(v);
+                });
+
+                if (missingNumbers.length > 0) {
+                    const list = missingNumbers.join(', ');
+                    setValidationMessage(missingNumbers.length === 1 ? `Number not found: ${list}` : `Numbers not found: ${list}`);
+                } else {
+                    setValidationMessage('');
                 }
-            });
 
-            setResults(uniqueResults);
-
-            // Validation: report any searched values not found in results or CSV
-            const csvKeySet = new Set((csvPhoneNumbers || []).map(p => buildPhoneKey(p || '')));
-            const missingNumbers = [];
-            valuesToSearch.forEach(v => {
-                const key = buildPhoneKey(v || '');
-                const foundInResults = uniqueResults.some(r => buildPhoneKey(r.foundPhone || '') === key || buildPhoneKey(r.value || '') === key);
-                const foundInCsv = csvKeySet.has(key);
-                if (!foundInResults && !foundInCsv) missingNumbers.push(v);
-            });
-
-            if (missingNumbers.length > 0) {
-                const list = missingNumbers.join(', ');
-                setValidationMessage(missingNumbers.length === 1 ? `Number not found: ${list}` : `Numbers not found: ${list}`);
-            } else {
-                setValidationMessage('');
+                return;
             }
 
-            return;
-        }
+            if (type === 'email') {
+                const allEmailResults = [];
 
-        if (type === 'email') {
-            const allEmailResults = [];
-
-            for (const value of valuesToSearch) {
-                const { data, error } = await performSingleSearch(value, type);
-                try {
-                    console.debug('performSingleSearch result (email)', { value, error: !!error, dataLength: Array.isArray(data) ? data.length : 0 });
-                } catch (e) {}
-
-                if (error) {
-                    allEmailResults.push({
-                        id: createResultId(type, value, 'error'),
-                        value,
-                        fullName: 'Error fetching data',
-                        courseFees: 'Error',
-                        microdegreeStudentStatus: 'Not a student',
-                        foundEmail: 'Error',
-                        foundPhone: 'Error',
-                        courseType: 'N/A',
-                        courseType1: '',
-                        coursePlan: 'N/A',
-                        location: 'N/A',
-                        joiningDate: '',
-                        joiningDateDisplay: 'N/A',
-                        joiningDateParts: null,
-                    });
-                    continue;
-                }
-
-                if (data && data.length > 0) {
-                    data.forEach(foundItem => {
-                        const fullName = `${foundItem.first_name || ''} ${foundItem.last_name || ''}`.trim();
-                        const courseFees = foundItem.course_fee !== null ? foundItem.course_fee : 'N/A';
-                        const primaryEmail = foundItem.email || foundItem.alternate_email || 'N/A';
-                        const courseType = foundItem.course_type || '';
-                        const courseType1 = foundItem.course_type_1 || '';
-                        const coursePlan = foundItem.course_plan || '';
-                        const location = foundItem.location || '';
-                        const joiningDateMeta = buildJoiningDateMeta(foundItem.date);
-                        const baseResult = {
+                for (const value of valuesToSearch) {
+                    const { data, error } = await performSingleSearch(value, type);
+                    try {
+                        console.debug('performSingleSearch result (email)', {
                             value,
-                            fullName: fullName || 'N/A',
-                            courseFees,
-                            microdegreeStudentStatus: 'Yes student found',
-                            foundEmail: primaryEmail,
-                            courseType,
-                            courseType1,
-                            coursePlan: coursePlan || 'N/A',
-                            location: location || 'N/A',
-                            joiningDate: joiningDateMeta.raw,
-                            joiningDateDisplay: joiningDateMeta.display,
-                            joiningDateParts: joiningDateMeta.parts,
-                        };
+                            error: !!error,
+                            dataLength: Array.isArray(data) ? data.length : 0,
+                        });
+                    } catch (e) {}
 
-                        const uniquePhones = getUniquePhoneNumbers(foundItem.phone, foundItem.alternate_phone);
+                    if (error) {
+                        allEmailResults.push({
+                            id: createResultId(type, value, 'error'),
+                            value,
+                            fullName: 'Error fetching data',
+                            courseFees: 'Error',
+                            microdegreeStudentStatus: 'Not a student',
+                            foundEmail: 'Error',
+                            foundPhone: 'Error',
+                            courseType: 'N/A',
+                            courseType1: '',
+                            coursePlan: 'N/A',
+                            location: 'N/A',
+                            joiningDate: '',
+                            joiningDateDisplay: 'N/A',
+                            joiningDateParts: null,
+                        });
+                        continue;
+                    }
 
-                        if (uniquePhones.length === 0) {
-                            allEmailResults.push({
-                                ...baseResult,
-                                id: createResultId(type, value, 'no-phone'),
-                                foundPhone: 'N/A',
-                            });
-                            return;
-                        }
+                    if (data && data.length > 0) {
+                        data.forEach((foundItem) => {
+                            const fullName = `${foundItem.first_name || ''} ${foundItem.last_name || ''}`.trim();
+                            const courseFees = foundItem.course_fee !== null ? foundItem.course_fee : 'N/A';
+                            const primaryEmail = foundItem.email || foundItem.alternate_email || 'N/A';
+                            const courseType = foundItem.course_type || '';
+                            const courseType1 = foundItem.course_type_1 || '';
+                            const coursePlan = foundItem.course_plan || '';
+                            const location = foundItem.location || '';
+                            const joiningDateMeta = buildJoiningDateMeta(foundItem.date);
+                            const baseResult = {
+                                value,
+                                fullName: fullName || 'N/A',
+                                courseFees,
+                                microdegreeStudentStatus: 'Yes student found',
+                                foundEmail: primaryEmail,
+                                courseType,
+                                courseType1,
+                                coursePlan: coursePlan || 'N/A',
+                                location: location || 'N/A',
+                                joiningDate: joiningDateMeta.raw,
+                                joiningDateDisplay: joiningDateMeta.display,
+                                joiningDateParts: joiningDateMeta.parts,
+                            };
 
-                        uniquePhones.forEach(phoneNumber => {
-                            const phoneKey = buildPhoneKey(phoneNumber);
-                            allEmailResults.push({
-                                ...baseResult,
-                                id: createResultId(type, value, phoneKey || 'phone'),
-                                foundPhone: phoneNumber,
+                            const uniquePhones = getUniquePhoneNumbers(foundItem.phone, foundItem.alternate_phone);
+
+                            if (uniquePhones.length === 0) {
+                                allEmailResults.push({
+                                    ...baseResult,
+                                    id: createResultId(type, value, 'no-phone'),
+                                    foundPhone: 'N/A',
+                                });
+                                return;
+                            }
+
+                            uniquePhones.forEach((phoneNumber) => {
+                                const phoneKey = buildPhoneKey(phoneNumber);
+                                allEmailResults.push({
+                                    ...baseResult,
+                                    id: createResultId(type, value, phoneKey || 'phone'),
+                                    foundPhone: phoneNumber,
+                                });
                             });
                         });
-                    });
-                } else {
-                    allEmailResults.push({
-                        id: createResultId(type, value, 'not-found'),
-                        value,
-                        fullName: 'Not Found',
-                        courseFees: 'Not Found',
-                        microdegreeStudentStatus: 'Not a student',
-                        foundEmail: 'Not Found',
-                        foundPhone: 'Not Found',
-                        courseType: 'N/A',
-                        courseType1: '',
-                        coursePlan: 'N/A',
-                        location: 'N/A',
-                        joiningDate: '',
-                        joiningDateDisplay: 'N/A',
-                        joiningDateParts: null,
-                    });
+                    } else {
+                        allEmailResults.push({
+                            id: createResultId(type, value, 'not-found'),
+                            value,
+                            fullName: 'Not Found',
+                            courseFees: 'Not Found',
+                            microdegreeStudentStatus: 'Not a student',
+                            foundEmail: 'Not Found',
+                            foundPhone: 'Not Found',
+                            courseType: 'N/A',
+                            courseType1: '',
+                            coursePlan: 'N/A',
+                            location: 'N/A',
+                            joiningDate: '',
+                            joiningDateDisplay: 'N/A',
+                            joiningDateParts: null,
+                        });
+                    }
                 }
+
+                const dedupedByEmail = [];
+                const seen = new Set();
+                allEmailResults.forEach((item) => {
+                    const dedupeKey = buildStableResultDedupeKey(type, item);
+                    if (seen.has(dedupeKey)) return;
+                    seen.add(dedupeKey);
+                    dedupedByEmail.push(item);
+                });
+
+                setResults(dedupedByEmail);
+
+                const missingEmails = valuesToSearch.filter(
+                    (val) =>
+                        !dedupedByEmail.some(
+                            (r) => (r.value || '').toLowerCase() === (val || '').toLowerCase() && r.microdegreeStudentStatus === 'Yes student found'
+                        )
+                );
+                if (missingEmails.length > 0) {
+                    const list = missingEmails.join(', ');
+                    setValidationMessage(missingEmails.length === 1 ? `Email not found: ${list}` : `Emails not found: ${list}`);
+                } else {
+                    setValidationMessage('');
+                }
+
+                return;
             }
-
-            const dedupedByEmail = [];
-            const seen = new Set();
-            allEmailResults.forEach(item => {
-                const key = `${(item.foundEmail || '').toLowerCase()}::${buildPhoneKey(item.foundPhone || '')}::${(item.fullName || '').toLowerCase()}`;
-                if (seen.has(key)) return;
-                seen.add(key);
-                dedupedByEmail.push(item);
-            });
-
-            setResults(dedupedByEmail);
-
-            const missingEmails = valuesToSearch.filter(val => !dedupedByEmail.some(r => (r.value || '').toLowerCase() === (val || '').toLowerCase() && r.microdegreeStudentStatus === 'Yes student found'));
-            if (missingEmails.length > 0) {
-                const list = missingEmails.join(', ');
-                setValidationMessage(missingEmails.length === 1 ? `Email not found: ${list}` : `Emails not found: ${list}`);
-            } else {
-                setValidationMessage('');
-            }
-
-            return;
+        } finally {
+            setIsFetching(false);
         }
+
     };
 
+    /* CSV upload handlers (temporarily disabled)
     const handleCsvFileChange = (event) => {
         const file = event.target.files && event.target.files[0];
         if (!file) return;
@@ -1305,46 +1598,100 @@ function Checking() {
         // Pass the array directly to avoid parsing/timing issues
         await handleSearch('phone', csvPhoneNumbers);
     };
+    */
 
     const getFilteredResults = () => {
-        const statusFiltered = filterStatus === 'All'
-            ? results
-            : results.filter(item => item.microdegreeStudentStatus === filterStatus);
+       const statusFiltered =
+    filterStatus === 'All'
+        ? results
+        : results.filter(item =>
+            (item.microdegreeStudentStatus || '')
+                .trim()
+                .toLowerCase() === filterStatus.toLowerCase()
+        );
 
-        const hasDateFilters = Boolean(joiningDateFilters.day || joiningDateFilters.month || joiningDateFilters.year);
-        if (!hasDateFilters) {
+
+        const hasDateRange = Boolean(joiningDateRange.from || joiningDateRange.to);
+        if (!hasDateRange) {
             return statusFiltered;
         }
 
-        const dateFiltered = statusFiltered.filter(item => {
-            const parts = item.joiningDateParts;
-            if (!parts) return false;
-            if (joiningDateFilters.day && Number(joiningDateFilters.day) !== Number(parts.day)) return false;
-            if (joiningDateFilters.month && Number(joiningDateFilters.month) !== Number(parts.month)) return false;
-            if (joiningDateFilters.year && Number(joiningDateFilters.year) !== Number(parts.year)) return false;
-            return true;
-        });
+        // Build simple YYYYMMDD-style integers so comparisons are
+        // purely date-based and inclusive, avoiding timezone shifts.
+        const parseRangeDate = (value) => {
+            if (!value) return null;
+            const [y, m, d] = value.split('-').map(Number);
+            if (!y || !m || !d) return null;
+            return y * 10000 + m * 100 + d;
+        };
 
-        return dateFiltered;
+        const fromKey = parseRangeDate(joiningDateRange.from);
+        const toKey = parseRangeDate(joiningDateRange.to);
+
+        return statusFiltered.filter(item => {
+            const parts = item.joiningDateParts;
+            if (!parts || !parts.year || !parts.month || !parts.day) return false;
+
+            const itemKey = parts.year * 10000 + parts.month * 100 + parts.day;
+
+            if (fromKey !== null && itemKey < fromKey) return false; // <  From  → exclude
+            if (toKey !== null && itemKey > toKey) return false;     // >  To    → exclude
+            return true; // Within range, including endpoints
+        });
     };
 
     const applyCourseFilters = (items) => {
-        const hasCourseFilters = Boolean(courseFilters.coursePlan || courseFilters.location || courseFilters.courseType1 || courseFilters.courseType);
+        const hasCourseFilters = Boolean(
+            (courseFilters.coursePlan && courseFilters.coursePlan.length > 0) ||
+            (courseFilters.location && courseFilters.location.length > 0) ||
+            (courseFilters.courseType1 && courseFilters.courseType1.length > 0)
+        );
         if (!hasCourseFilters) return items;
+
         return items.filter(item => {
-            if (courseFilters.coursePlan && item.coursePlan !== courseFilters.coursePlan) return false;
-            if (courseFilters.location && item.location !== courseFilters.location) return false;
-            if (courseFilters.courseType && item.courseType !== courseFilters.courseType) return false;
-            if (courseFilters.courseType1 && item.courseType1 !== courseFilters.courseType1) return false;
+            if (courseFilters.coursePlan && courseFilters.coursePlan.length > 0 &&
+                !courseFilters.coursePlan.includes(item.coursePlan)) return false;
+
+            if (courseFilters.location && courseFilters.location.length > 0 &&
+                !courseFilters.location.includes(item.location)) return false;
+
+            if (courseFilters.courseType1 && courseFilters.courseType1.length > 0 &&
+                !courseFilters.courseType1.includes(item.courseType1)) return false;
+
             return true;
         });
     };
 
     const filteredResults = applyCourseFilters(getFilteredResults());
-    const joiningDateOptions = computeJoiningDateOptions(results);
-    const hasActiveJoiningFilters = Boolean(joiningDateFilters.day || joiningDateFilters.month || joiningDateFilters.year);
+    const hasActiveJoiningFilters = Boolean(joiningDateRange.from || joiningDateRange.to);
     const courseFilterOptions = computeCourseFilterOptions(results);
-    const hasActiveCourseFilters = Boolean(courseFilters.coursePlan || courseFilters.location || courseFilters.courseType1 || courseFilters.courseType);
+    const hasActiveCourseFilters = Boolean(
+        (courseFilters.coursePlan && courseFilters.coursePlan.length > 0) ||
+        (courseFilters.location && courseFilters.location.length > 0) ||
+        (courseFilters.courseType1 && courseFilters.courseType1.length > 0)
+    );
+
+    const visibleYesCount = filteredResults.filter(r => r.microdegreeStudentStatus === 'Yes student found').length;
+    const visibleNoCount = filteredResults.filter(r => r.microdegreeStudentStatus === 'Not a student').length;
+
+    const activeFilterParts = [];
+    if (filterStatus && filterStatus !== 'All') {
+        activeFilterParts.push(`Status (${filterStatus})`);
+    }
+    if (hasActiveJoiningFilters) {
+        const fromText = joiningDateRange.from ? joiningDateRange.from : '…';
+        const toText = joiningDateRange.to ? joiningDateRange.to : '…';
+        activeFilterParts.push(`Joining Date (${fromText}→${toText})`);
+    }
+    if (courseFilters.location && courseFilters.location.length > 0) {
+        activeFilterParts.push(`Location (${courseFilters.location.join(', ')})`);
+    }
+    if (courseFilters.coursePlan && courseFilters.coursePlan.length > 0) {
+        activeFilterParts.push(`Course Plan (${courseFilters.coursePlan.join(', ')})`);
+    }
+    if (courseFilters.courseType1 && courseFilters.courseType1.length > 0) {
+        activeFilterParts.push(`Delivery Mode (${courseFilters.courseType1.join(', ')})`);
+    }
 
     const copyToClipboard = (text, index, type = 'searched') => {
         if (text === 'N/A' || text === 'Error' || text === 'Not Found') return;
@@ -1360,62 +1707,25 @@ function Checking() {
         }
     };
 
-    const resetJoiningDateFilters = () => setJoiningDateFilters({ day: '', month: '', year: '' });
+    const resetJoiningDateFilters = () => setJoiningDateRange({ from: '', to: '' });
 
-    const handleJoiningFilterChange = (key, value) => {
-        setJoiningDateFilters(prev => ({
-            ...prev,
-            [key]: value,
-        }));
+    const handleJoiningDateChange = (key, value) => {
+        setJoiningDateRange(prev => ({ ...prev, [key]: value }));
     };
 
-    const resetCourseFilters = () => setCourseFilters({ coursePlan: '', location: '', courseType1: '', courseType: '' });
+    const resetCourseFilters = () => setCourseFilters({ coursePlan: [], location: [], courseType1: [] });
 
-    const handleCourseFilterChange = (key, value) => {
-        setCourseFilters(prev => ({
-            ...prev,
-            [key]: value,
-        }));
+    const handleCoursePillClick = (key, value) => {
+        setCourseFilters(prev => {
+            if (value === null) {
+                return { ...prev, [key]: [] };
+            }
+            const current = Array.isArray(prev[key]) ? prev[key] : [];
+            const exists = current.includes(value);
+            const next = exists ? current.filter(v => v !== value) : [...current, value];
+            return { ...prev, [key]: next };
+        });
     };
-
-    const toggleFilterMenu = (menuKey) => {
-        setExpandedFilterMenu(prev => (prev === menuKey ? '' : menuKey));
-        setExpandedSubmenus(prev => ({
-            ...prev,
-            [menuKey]: prev[menuKey] || '',
-        }));
-    };
-
-    const toggleSubmenu = (groupKey, subKey) => {
-        setExpandedSubmenus(prev => ({
-            ...prev,
-            [groupKey]: prev[groupKey] === subKey ? '' : subKey,
-        }));
-    };
-
-    const resetFilterMenus = () => {
-        setExpandedFilterMenu('');
-        setExpandedSubmenus({ joining: '', course: '' });
-    };
-
-    const renderFilterSubsection = (groupKey, subKey, label, controls) => (
-        <div style={filterSubGroupStyle}>
-            <button
-                type="button"
-                onClick={() => toggleSubmenu(groupKey, subKey)}
-                style={{
-                    ...filterSubGroupButtonStyle,
-                    backgroundColor: expandedSubmenus[groupKey] === subKey ? '#eef2ff' : '#fff',
-                }}
-            >
-                <span>{label}</span>
-                <span style={{ fontWeight: 700 }}>{expandedSubmenus[groupKey] === subKey ? '-' : '+'}</span>
-            </button>
-            {expandedSubmenus[groupKey] === subKey && (
-                <div style={filterSubGroupContentStyle}>{controls}</div>
-            )}
-        </div>
-    );
 
     const clearAll = () => {
         setSearchInput('');
@@ -1428,7 +1738,12 @@ function Checking() {
         setSelectedEmails(new Set());
         resetJoiningDateFilters();
         resetCourseFilters();
-        resetFilterMenus();
+    };
+
+    const clearAllFilters = () => {
+        setFilterStatus('All');
+        resetJoiningDateFilters();
+        resetCourseFilters();
     };
 
     const toggleSelectEmail = (email) => {
@@ -1515,6 +1830,12 @@ function Checking() {
 
             const formData = new FormData();
             formData.append('subject', emailSubject);
+            // Reply-To is optional:
+            // - If user leaves default untouched, we send that default.
+            // - If user clears the field, we omit replyTo so replies go to From email.
+            if (emailReplyTo && emailReplyTo.trim()) {
+                formData.append('replyTo', emailReplyTo);
+            }
             formData.append('message', emailBody);
             formData.append('emails', JSON.stringify(recipients));
 
@@ -1546,6 +1867,7 @@ function Checking() {
                 setTimeout(() => setSuccessMessage(''), 3000);
                 setSelectedEmails(new Set());
                 setEmailSubject('');
+                setEmailReplyTo('');
                 setEmailBody('');
                 setEmailAttachments([]);
                 setIsEmailModalVisible(false);
@@ -1611,460 +1933,371 @@ function Checking() {
 
                 {validationMessage && <div style={validationMessageStyle}>{validationMessage}</div>}
 
+                {/* CSV upload section temporarily disabled but preserved for future use
                 <div style={csvUploadSectionStyle}>
-    <input
-        type="file"
-        accept=".csv"
-        onChange={(event) => {
-            setCsvFileName(event.target.files[0]?.name || '');
-            handleCsvFileChange(event);
-        }}
-        disabled={isCsvProcessing}
-    />
+                    <input
+                        type="file"
+                        accept=".csv"
+                        onChange={(event) => {
+                            setCsvFileName(event.target.files[0]?.name || '');
+                            handleCsvFileChange(event);
+                        }}
+                        disabled={isCsvProcessing}
+                    />
 
-    {/* SHOW FILE NAME + SMALL RED X */}
-    {csvFileName && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px' }}>
-            <span style={{ fontSize: '14px', color: '#333' }}>{csvFileName}</span>
+                    {csvFileName && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px' }}>
+                            <span style={{ fontSize: '14px', color: '#333' }}>{csvFileName}</span>
 
-            <button
-                onClick={() => {
-                    setCsvPhoneNumbers([]);
-                    setCsvStatusMessage('');
-                    setCsvFileName('');
-                }}
-                style={{
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    color: 'red',
-                }}
-                title="Remove CSV"
-            >
-                ✖
-            </button>
-        </div>
-    )}
-
-    {isCsvProcessing && <span style={{ fontStyle: 'italic', color: '#6c757d' }}>Extracting...</span>}
-
-    {!isCsvProcessing && csvStatusMessage && (
-        <div style={csvStatusTextStyle}>{csvStatusMessage}</div>
-    )}
-
-    {csvPhoneNumbers.length > 0 && (
-        <div style={{ fontSize: '0.9rem', color: '#333' }}>
-            {csvPhoneNumbers.length} number{csvPhoneNumbers.length > 1 ? 's' : ''} detected.
-        </div>
-    )}
-</div>
-
-            </div>
-{/* MODAL FOR ADD STUDENT */}
-{isFormVisible && (
-    <div style={modalOverlayStyle}>
-        <div style={modalContentStyle}>
-            
-            {/* Main Close Button (Modal) */}
-            <button
-                type="button"
-                style={modalCloseButtonStyle}
-                onClick={() => setIsFormVisible(false)}
-                aria-label="Close"
-            >
-                ×
-            </button>
-
-            <div style={formSectionStyle}>
-
-                {/* Second Close Button Inside Form */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', margin: 0 }}>
-    <button
-        type="button"
-        onClick={() => setIsFormVisible(false)}
-        style={{
-            background: 'transparent',
-            color: 'red',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '22px',
-            fontWeight: 'bold',
-        }}
-    >
-        X
-    </button>
-</div>
-
-
-
-                <h3 style={{ marginBottom: '15px' }}>Add Student Details</h3>
-
-                <form onSubmit={handleFormSubmit}>
-                    <div style={formGridStyle}>
-                        
-                        {/* Removed: ID + Created_at */}
-
-                        <div style={formFieldStyle}>
-                            <label>First Name *</label>
-                            <input
-                                style={formInputStyle}
-                                name="firstName"
-                                value={formData.firstName}
-                                onChange={handleFormInputChange}
-                            />
-                            {formErrors.firstName && <span style={errorTextStyle}>{formErrors.firstName}</span>}
-                        </div>
-
-                        <div style={formFieldStyle}>
-                            <label>Last Name *</label>
-                            <input
-                                style={formInputStyle}
-                                name="lastName"
-                                value={formData.lastName}
-                                onChange={handleFormInputChange}
-                            />
-                            {formErrors.lastName && <span style={errorTextStyle}>{formErrors.lastName}</span>}
-                        </div>
-
-                        <div style={formFieldStyle}>
-                            <label>Email *</label>
-                            <input
-                                style={formInputStyle}
-                                name="email"
-                                value={formData.email}
-                                onChange={handleFormInputChange}
-                                type="email"
-                            />
-                            {formErrors.email && <span style={errorTextStyle}>{formErrors.email}</span>}
-                        </div>
-
-                        <div style={formFieldStyle}>
-                            <label>Alternate Email</label>
-                            <input
-                                style={formInputStyle}
-                                name="alternateEmail"
-                                value={formData.alternateEmail}
-                                onChange={handleFormInputChange}
-                            />
-                        </div>
-
-                        <div style={formFieldStyle}>
-                            <label>Phone *</label>
-                            <input
-                                style={formInputStyle}
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleFormInputChange}
-                            />
-                            {formErrors.phone && <span style={errorTextStyle}>{formErrors.phone}</span>}
-                        </div>
-
-                        <div style={formFieldStyle}>
-                            <label>Alternate Phone</label>
-                            <input
-                                style={formInputStyle}
-                                name="alternatePhone"
-                                value={formData.alternatePhone}
-                                onChange={handleFormInputChange}
-                            />
-                        </div>
-
-                        <div style={formFieldStyle}>
-                            <label>Course Fee</label>
-                            <input
-                                style={formInputStyle}
-                                name="courseFee"
-                                value={formData.courseFee}
-                                onChange={handleFormInputChange}
-                            />
-                        </div>
-
-                        {/* Extra Fields remain same */}
-                        <div style={formFieldStyle}><label>Location</label><input style={formInputStyle} name="location" value={formData.location} onChange={handleFormInputChange} /></div>
-                        <div style={formFieldStyle}><label>Sales Agent</label><input style={formInputStyle} name="salesAgent" value={formData.salesAgent} onChange={handleFormInputChange} /></div>
-                        <div style={formFieldStyle}><label>Course</label><input style={formInputStyle} name="courseType" value={formData.courseType} onChange={handleFormInputChange} /></div>
-                        <div style={formFieldStyle}>
-                            <label>Date of Joining</label>
-                            <input
-                                style={formInputStyle}
-                                type="date"
-                                name="date"
-                                value={formData.date}
-                                onChange={handleFormInputChange}
-                            />
-                        </div>
-                        <div style={formFieldStyle}>
-                            <label>Course Plan</label>
-                            <select
-                                style={formInputStyle}
-                                name="coursePlan"
-                                value={formData.coursePlan}
-                                onChange={handleFormInputChange}
+                            <button
+                                onClick={() => {
+                                    setCsvPhoneNumbers([]);
+                                    setCsvStatusMessage('');
+                                    setCsvFileName('');
+                                }}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '16px',
+                                    fontWeight: 'bold',
+                                    color: 'red',
+                                }}
+                                title="Remove CSV"
                             >
-                                <option value="">Select plan</option>
-                                <option value="Gold">Gold</option>
-                                <option value="Diamond">Diamond</option>
-                                <option value="Diamond Plus">Diamond Plus</option>
-                                <option value="Platinum">Platinum</option>
-                                <option value="Titanium">Titanium</option>
-                                <option value="Titanium Plus">Titanium Plus</option>
-                            </select>
-                        </div>
-                        <div style={formFieldStyle}><label>Courses Taken</label><input style={formInputStyle} name="coursesTaken" value={formData.coursesTaken} onChange={handleFormInputChange} /></div>
-                        <div style={formFieldStyle}>
-                            <label>Course Type</label>
-                            <select
-                                style={formInputStyle}
-                                name="courseType1"
-                                value={formData.courseType1}
-                                onChange={handleFormInputChange}
-                            >
-                                <option value="">Select type</option>
-                                <option value="Live">Live</option>
-                                <option value="Recorded">Recorded</option>
-                            </select>
-                        </div>
-
-                    </div>
-
-                    <button type="submit" style={formSubmitButtonStyle} disabled={isFormSubmitting}>
-                        {isFormSubmitting ? 'Saving…' : 'Save Student'}
-                    </button>
-
-                    {formStatus.message && (
-                        <div style={{ ...formStatusStyle, color: formStatus.type === 'success' ? '#28a745' : '#dc3545' }}>
-                            {formStatus.message}
+                                ✖
+                            </button>
                         </div>
                     )}
-                </form>
-            </div>
-        </div>
-    </div>
-)}
 
+                    {isCsvProcessing && <span style={{ fontStyle: 'italic', color: '#6c757d' }}>Extracting...</span>}
 
-            {results.length > 0 && (
-                <div style={filterButtonContainerStyle}>
-                    <span style={filterLabelStyle}>Filter:</span>
-                    <button
-                        onClick={() => setFilterStatus('All')}
-                        style={filterStatus === 'All' ? activeFilterAllStyle : inactiveFilterButtonStyle}
-                    >
-                        All
-                    </button>
-                    <button
-                        onClick={() => setFilterStatus('Yes student found')}
-                        style={filterStatus === 'Yes student found' ? activeFilterYesStyle : inactiveFilterButtonStyle}
-                    >
-                        Yes student found
-                    </button>
-                    <button
-                        onClick={() => setFilterStatus('Not a student')}
-                        style={filterStatus === 'Not a student' ? activeFilterNoStyle : inactiveFilterButtonStyle}
-                    >
-                        Not a student
-                    </button>
+                    {!isCsvProcessing && csvStatusMessage && (
+                        <div style={csvStatusTextStyle}>{csvStatusMessage}</div>
+                    )}
+
+                    {csvPhoneNumbers.length > 0 && (
+                        <div style={{ fontSize: '0.9rem', color: '#333' }}>
+                            {csvPhoneNumbers.length} number{csvPhoneNumbers.length > 1 ? 's' : ''} detected.
+                        </div>
+                    )}
                 </div>
-            )}
+                */}
+            </div>
 
-            {results.length > 0 && (
-                <div style={filterMenuContainerStyle}>
-                    <div style={filterMenuHeaderStyle}>Filters</div>
-                    <div style={filterToggleRowStyle}>
-                        <button
-                            type="button"
-                            style={expandedFilterMenu === 'joining' ? filterToggleButtonActiveStyle : filterToggleButtonStyle}
-                            onClick={() => toggleFilterMenu('joining')}
-                        >
-                            Joining Date
-                        </button>
-                        <button
-                            type="button"
-                            style={expandedFilterMenu === 'course' ? filterToggleButtonActiveStyle : filterToggleButtonStyle}
-                            onClick={() => toggleFilterMenu('course')}
-                        >
-                            Course Details
-                        </button>
+            <div style={filterToggleBarStyle}>
+                <button
+                    type="button"
+                    onClick={() => setAreFiltersOpen(prev => !prev)}
+                    style={filtersDrawerToggleButtonStyle}
+                >
+                    {areFiltersOpen ? '⮜ Hide Filters' : 'Show Filters ⮞'}
+                </button>
+
+                {results.length > 0 && (
+                    <div style={filterToggleSummaryCenterStyle}>
+                        Visible: {filteredResults.length} | Yes: {visibleYesCount} | No: {visibleNoCount}
+                        {activeFilterParts.length > 0 ? ` — Filters: ${activeFilterParts.join(', ')}` : ''}
                     </div>
+                )}
+            </div>
 
-                    {expandedFilterMenu === 'joining' && (
-                        <div style={filterSubMenuStyle}>
-                            {renderFilterSubsection(
-                                'joining',
-                                'day',
-                                'Day',
-                                <select
-                                    value={joiningDateFilters.day}
-                                    onChange={(e) => handleJoiningFilterChange('day', e.target.value)}
-                                    style={dateFilterSelectStyle}
-                                >
-                                    <option value="">Any</option>
-                                    {joiningDateOptions.days.map((day) => (
-                                        <option key={day} value={day}>
-                                            {String(day).padStart(2, '0')}
-                                        </option>
-                                    ))}
-                                </select>
-                            )}
+            <div style={areFiltersOpen ? mainContentWrapperStyle : { ...mainContentWrapperStyle, gap: '0px' }}>
+                <div
+                    style={areFiltersOpen
+                        ? sidebarContainerStyle
+                        : {
+                            ...sidebarContainerStyle,
+                            flex: '0 0 0px',
+                            width: 0,
+                            maxWidth: 0,
+                            opacity: 0,
+                            transform: 'translateX(-16px)',
+                            pointerEvents: 'none',
+                            overflow: 'hidden',
+                        }
+                    }
+                >
+                    <div style={unifiedFilterPanelStyle}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={sidebarSectionHeaderStyle}>Filters</div>
+                            <button
+                                type="button"
+                                onClick={clearAllFilters}
+                                style={{
+                                    ...pillButtonBaseStyle,
+                                    fontSize: '0.8rem',
+                                    padding: '4px 10px',
+                                    opacity: (filterStatus !== 'All' || hasActiveJoiningFilters || hasActiveCourseFilters) ? 1 : 0.5,
+                                    cursor: (filterStatus !== 'All' || hasActiveJoiningFilters || hasActiveCourseFilters) ? 'pointer' : 'not-allowed',
+                                }}
+                                disabled={filterStatus === 'All' && !hasActiveJoiningFilters && !hasActiveCourseFilters}
+                            >
+                                Clear All
+                            </button>
+                        </div>
 
-                            {renderFilterSubsection(
-                                'joining',
-                                'month',
-                                'Month',
-                                <select
-                                    value={joiningDateFilters.month}
-                                    onChange={(e) => handleJoiningFilterChange('month', e.target.value)}
-                                    style={dateFilterSelectStyle}
-                                >
-                                    <option value="">Any</option>
-                                    {joiningDateOptions.months.map((month) => (
-                                        <option key={month} value={month}>
-                                            {monthLabels[month - 1] || 'Month'}
-                                        </option>
-                                    ))}
-                                </select>
-                            )}
+                        <div style={filterGroupSectionStyle}>
+                            <div style={sidebarSectionHeaderStyle}>Status Filter</div>
+                            <div style={statusFilterRowStyle}>
+                                <div style={statusFilterButtonContainerStyle}>
+                                    <button
+                                        onClick={() => setFilterStatus('All')}
+                                        style={filterStatus === 'All' ? activeFilterAllStyle : inactiveFilterButtonStyle}
+                                    >
+                                        All
+                                    </button>
+                                    <button
+                                        onClick={() => setFilterStatus('Yes student found')}
+                                        style={filterStatus === 'Yes student found' ? activeFilterYesStyle : inactiveFilterButtonStyle}
+                                    >
+                                        Yes student found
+                                    </button>
+                                    <button
+                                        onClick={() => setFilterStatus('Not a student')}
+                                        style={filterStatus === 'Not a student' ? activeFilterNoStyle : inactiveFilterButtonStyle}
+                                    >
+                                        Not a student
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
 
-                            {renderFilterSubsection(
-                                'joining',
-                                'year',
-                                'Year',
-                                <select
-                                    value={joiningDateFilters.year}
-                                    onChange={(e) => handleJoiningFilterChange('year', e.target.value)}
-                                    style={dateFilterSelectStyle}
-                                >
-                                    <option value="">Any</option>
-                                    {joiningDateOptions.years.map((year) => (
-                                        <option key={year} value={year}>
-                                            {year}
-                                        </option>
-                                    ))}
-                                </select>
-                            )}
-
-                            <div style={filterSubResetRowStyle}>
+                        <div style={filterGroupSectionStyle}>
+                            <div style={sidebarSectionHeaderStyle}>Joining Date</div>
+                            <div style={dateFilterControlsStyle}>
+                                <div style={filterFieldStyle}>
+                                    <label style={filterFieldLabelStyle}>From</label>
+                                    <input
+                                        type="date"
+                                        value={joiningDateRange.from}
+                                        onChange={(e) => handleJoiningDateChange('from', e.target.value)}
+                                        style={dateFilterSelectStyle}
+                                    />
+                                </div>
+                                <div style={filterFieldStyle}>
+                                    <label style={filterFieldLabelStyle}>To</label>
+                                    <input
+                                        type="date"
+                                        value={joiningDateRange.to}
+                                        onChange={(e) => handleJoiningDateChange('to', e.target.value)}
+                                        style={dateFilterSelectStyle}
+                                    />
+                                </div>
                                 <button
                                     type="button"
                                     onClick={resetJoiningDateFilters}
                                     style={{
-                                        ...dateFilterResetButtonStyle,
-                                        opacity: hasActiveJoiningFilters ? 1 : 0.6,
-                                        cursor: hasActiveJoiningFilters ? 'pointer' : 'not-allowed'
+                                        ...pillButtonBaseStyle,
+                                        fontSize: '0.8rem',
+                                        padding: '4px 10px',
+                                        whiteSpace: 'nowrap',
+                                        marginTop: '18px',
                                     }}
                                     disabled={!hasActiveJoiningFilters}
                                 >
-                                    Reset Joining Filters
+                                    Clear Date Filter
                                 </button>
                             </div>
                         </div>
-                    )}
 
-                    {expandedFilterMenu === 'course' && (
-                        <div style={filterSubMenuStyle}>
-                            {renderFilterSubsection(
-                                'course',
-                                'coursePlan',
-                                'Course Plan',
-                                <select
-                                    value={courseFilters.coursePlan}
-                                    onChange={(e) => handleCourseFilterChange('coursePlan', e.target.value)}
-                                    style={dateFilterSelectStyle}
-                                >
-                                    <option value="">Any</option>
+                        <div style={courseFilterFieldsWrapperStyle}>
+                            <div style={filterFieldStyle}>
+                                <label style={filterFieldLabelStyle}>Course Plan</label>
+                                <div style={pillRowStyle}>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCoursePillClick('coursePlan', null)}
+                                        style={(!courseFilters.coursePlan || courseFilters.coursePlan.length === 0) ? pillButtonSelectedStyle : pillButtonBaseStyle}
+                                    >
+                                        Any
+                                    </button>
                                     {courseFilterOptions.plans.map((plan) => (
-                                        <option key={plan} value={plan}>
+                                        <button
+                                            key={plan}
+                                            type="button"
+                                            onClick={() => handleCoursePillClick('coursePlan', plan)}
+                                            style={courseFilters.coursePlan && courseFilters.coursePlan.includes(plan) ? pillButtonSelectedStyle : pillButtonBaseStyle}
+                                        >
                                             {plan}
-                                        </option>
+                                        </button>
                                     ))}
-                                </select>
-                            )}
-
-                            {renderFilterSubsection(
-                                'course',
-                                'location',
-                                'Location',
-                                <select
-                                    value={courseFilters.location}
-                                    onChange={(e) => handleCourseFilterChange('location', e.target.value)}
-                                    style={dateFilterSelectStyle}
-                                >
-                                    <option value="">Any</option>
+                                </div>
+                            </div>
+                            <div style={filterFieldStyle}>
+                                <label style={filterFieldLabelStyle}>Location</label>
+                                <div style={pillRowStyle}>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCoursePillClick('location', null)}
+                                        style={(!courseFilters.location || courseFilters.location.length === 0) ? pillButtonSelectedStyle : pillButtonBaseStyle}
+                                    >
+                                        Any
+                                    </button>
                                     {courseFilterOptions.locations.map((loc) => (
-                                        <option key={loc} value={loc}>
+                                        <button
+                                            key={loc}
+                                            type="button"
+                                            onClick={() => handleCoursePillClick('location', loc)}
+                                            style={courseFilters.location && courseFilters.location.includes(loc) ? pillButtonSelectedStyle : pillButtonBaseStyle}
+                                        >
                                             {loc}
-                                        </option>
+                                        </button>
                                     ))}
-                                </select>
-                            )}
-
-                            {renderFilterSubsection(
-                                'course',
-                                'courseType',
-                                'Course Type',
-                                <select
-                                    value={courseFilters.courseType}
-                                    onChange={(e) => handleCourseFilterChange('courseType', e.target.value)}
-                                    style={dateFilterSelectStyle}
-                                >
-                                    <option value="">Any</option>
-                                    {courseFilterOptions.courseTypes.map((value) => (
-                                        <option key={value} value={value}>
+                                </div>
+                            </div>
+                            <div style={filterFieldStyle}>
+                                <label style={filterFieldLabelStyle}>Delivery Mode</label>
+                                <div style={pillRowStyle}>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCoursePillClick('courseType1', null)}
+                                        style={(!courseFilters.courseType1 || courseFilters.courseType1.length === 0) ? pillButtonSelectedStyle : pillButtonBaseStyle}
+                                    >
+                                        Any
+                                    </button>
+                                    {courseFilterOptions.courseType1Values.map((value) => (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            onClick={() => handleCoursePillClick('courseType1', value)}
+                                            style={courseFilters.courseType1 && courseFilters.courseType1.includes(value) ? pillButtonSelectedStyle : pillButtonBaseStyle}
+                                        >
                                             {value}
-                                        </option>
+                                        </button>
                                     ))}
-                                </select>
-                            )}
-
-                            {renderFilterSubsection(
-                                'course',
-                                'courseType1',
-                                'Course Type 1',
-                                <select
-                                    value={courseFilters.courseType1}
-                                    onChange={(e) => handleCourseFilterChange('courseType1', e.target.value)}
-                                    style={dateFilterSelectStyle}
-                                >
-                                    <option value="">Any</option>
-                                    {(courseFilterOptions.courseType1Values.length > 0
-                                        ? courseFilterOptions.courseType1Values
-                                        : ['Live', 'Recorded'])
-                                        .map((value) => (
-                                            <option key={value} value={value}>
-                                                {value}
-                                            </option>
-                                        ))}
-                                </select>
-                            )}
-
-                            <div style={filterSubResetRowStyle}>
-                                <button
-                                    type="button"
-                                    onClick={resetCourseFilters}
-                                    style={{
-                                        ...dateFilterResetButtonStyle,
-                                        opacity: hasActiveCourseFilters ? 1 : 0.6,
-                                        cursor: hasActiveCourseFilters ? 'pointer' : 'not-allowed'
-                                    }}
-                                    disabled={!hasActiveCourseFilters}
-                                >
-                                    Reset Course Filters
-                                </button>
+                                </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <div className="table-column" style={resultsPanelWrapperStyle}>
+                    {isFetching ? (
+                        <div className="table-loading">
+                            <div className="spinner" />
+                        </div>
+                    ) : filteredResults.length > 0 ? (
+                        <div style={scrollableResultsContainerStyle}>
+                            <table style={tableStyle}>
+                                <thead>
+                                    <tr>
+                                        <th style={{ ...thStyle, textAlign: 'center' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={areAllSelectableSelected}
+                                                onChange={toggleSelectAll}
+                                                title="Select all visible"
+                                                style={checkboxStyle}
+                                            />
+                                        </th>
+                                        <th style={thStyle}>Searched Value</th>
+                                        <th style={thStyle}>Full Name</th>
+                                        <th style={thStyle}>Course Fees</th>
+                                        <th style={thStyle}>Batch Name</th>
+                                        <th style={thStyle}>Delivery Mode</th>
+                                        <th style={thStyle}>Course Plan</th>
+                                        <th style={thStyle}>Location</th>
+                                        <th style={thStyle}>Date of Joining</th>
+                                        <th style={thStyle}>Duration</th>
+                                        <th style={thStyle}>Microdegree Student</th>
+                                        {activeSearchType === 'phone' && <th style={thStyle}>Email</th>}
+                                        {activeSearchType === 'email' && <th style={thStyle}>Contact No.</th>}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredResults.map((item, index) => {
+                                        const sessionMeta = computeSessionMeta(item);
+                                        return (
+                                        <tr key={item.id || index} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#fbfbfb' }}>
+                                            <td style={tdStyle}>
+                                                {item.foundEmail && item.foundEmail !== 'N/A' && item.foundEmail !== 'Error' && item.foundEmail !== 'Not Found' ? (
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedEmails.has(item.foundEmail)}
+                                                        onChange={() => toggleSelectEmail(item.foundEmail)}
+                                                        title={`Select ${item.foundEmail}`}
+                                                        style={checkboxStyle}
+                                                    />
+                                                ) : (
+                                                    <input type="checkbox" disabled title="No valid email" style={{ ...checkboxStyle, opacity: 0.45 }} />
+                                                )}
+                                            </td>
+                                            <td style={tdStyle}>
+                                                {item.value}
+                                                {item.value !== 'N/A' && item.value !== 'Error' && item.value !== 'Not Found' && (
+                                                    <button
+                                                        onClick={() => copyToClipboard(item.value, index, 'searched')}
+                                                        style={copyButtonStyle}
+                                                    >
+                                                        <FontAwesomeIcon icon={faCopy} style={{ color: 'black', fontSize: '1.2em' }} />
+                                                    </button>
+                                                )}
+                                                {copiedIndex === index && <span style={copiedMessageStyle}>Copied!</span>}
+                                            </td>
+                                            <td style={tdStyle}>{item.fullName}</td>
+                                            <td style={tdStyle}>{item.courseFees}</td>
+                                            <td style={tdStyle}>{item.courseType || 'N/A'}</td>
+                                            <td style={tdStyle}>{item.courseType1 || 'N/A'}</td>
+                                            <td style={tdStyle}>{item.coursePlan || 'N/A'}</td>
+                                            <td style={tdStyle}>{item.location || 'N/A'}</td>
+                                            <td style={tdStyle}>{item.joiningDateDisplay || 'N/A'}</td>
+                                            <td style={{ ...tdStyle, fontWeight: 'bold', color: sessionMeta.color }}>{sessionMeta.label}</td>
+                                            <td
+                                                style={{
+                                                    ...tdStyle,
+                                                    fontWeight: 'bold',
+                                                    color: item.microdegreeStudentStatus === 'Yes student found' ? 'green' : 'red'
+                                                }}
+                                            >
+                                                {item.microdegreeStudentStatus}
+                                            </td>
+                                            {activeSearchType === 'phone' && (
+                                                <td style={tdStyle}>
+                                                    {item.foundEmail}
+                                                    {item.foundEmail !== 'N/A' && item.foundEmail !== 'Error' && item.foundEmail !== 'Not Found' && (
+                                                        <button
+                                                            onClick={() => copyToClipboard(item.foundEmail, index, 'email')}
+                                                            style={copyButtonStyle}
+                                                        >
+                                                            <FontAwesomeIcon icon={faCopy} style={{ color: 'black', fontSize: '1.2em' }} />
+                                                        </button>
+                                                    )}
+                                                    {copiedEmailIndex === index && <span style={copiedMessageStyle}>Copied!</span>}
+                                                </td>
+                                            )}
+                                            {activeSearchType === 'email' && (
+                                                <td style={tdStyle}>
+                                                    {item.foundPhone}
+                                                    {item.foundPhone !== 'N/A' && item.foundPhone !== 'Error' && item.foundPhone !== 'Not Found' && (
+                                                        <button
+                                                            onClick={() => copyToClipboard(item.foundPhone, index, 'phone')}
+                                                            style={copyButtonStyle}
+                                                        >
+                                                            <FontAwesomeIcon icon={faCopy} style={{ color: 'black', fontSize: '1.2em' }} />
+                                                        </button>
+                                                    )}
+                                                    {copiedEmailIndex === index && <span style={copiedMessageStyle}>Copied!</span>}
+                                                </td>
+                                            )}
+                                        </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <div style={emptyResultsStyle}>Start a search to see student data on the right.</div>
                     )}
                 </div>
-            )}
+            </div>
 
-            {/* Bottom selection bar + Email modal: appears when at least one recipient selected */}
             {results.length > 0 && selectedEmails.size > 0 && (
                 <div style={selectionBarStyle}>
                     <div style={{ fontWeight: 700, color: '#0f172a' }}>{selectedEmails.size} selected</div>
                     <div style={{ color: '#64748b' }}>Select recipients for bulk email</div>
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: '10px' }}>
-                            <button
+                        <button
                             onClick={() => setSelectedEmails(new Set())}
                             style={{ ...inactiveButtonStyle }}
                         >
@@ -2080,28 +2313,241 @@ function Checking() {
                 </div>
             )}
 
-            {/* Email Modal */}
+            {isFormVisible && (
+                <div style={modalOverlayStyle}>
+                    <div style={formSectionStyle}>
+                        <div style={formModalHeaderStyle}>
+                            <h3 style={formModalTitleStyle}>Add Student Details</h3>
+                            <button
+                                type="button"
+                                aria-label="Close"
+                                onClick={() => setIsFormVisible(false)}
+                                style={formModalCloseButtonStyle}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleFormSubmit}>
+                            <div style={formGridStyle}>
+                                <div style={formFieldStyle}>
+                                    <label>First Name *</label>
+                                    <input
+                                        style={formInputStyle}
+                                            name="firstName"
+                                            value={formData.firstName}
+                                            onChange={handleFormInputChange}
+                                        />
+                                        {formErrors.firstName && <span style={errorTextStyle}>{formErrors.firstName}</span>}
+                                    </div>
+
+                                    <div style={formFieldStyle}>
+                                        <label>Last Name *</label>
+                                        <input
+                                            style={formInputStyle}
+                                            name="lastName"
+                                            value={formData.lastName}
+                                            onChange={handleFormInputChange}
+                                        />
+                                        {formErrors.lastName && <span style={errorTextStyle}>{formErrors.lastName}</span>}
+                                    </div>
+
+                                    <div style={formFieldStyle}>
+                                        <label>Email *</label>
+                                        <input
+                                            style={formInputStyle}
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleFormInputChange}
+                                            type="email"
+                                        />
+                                        {formErrors.email && <span style={errorTextStyle}>{formErrors.email}</span>}
+                                    </div>
+
+                                    <div style={formFieldStyle}>
+                                        <label>Alternate Email</label>
+                                        <input
+                                            style={formInputStyle}
+                                            name="alternateEmail"
+                                            value={formData.alternateEmail}
+                                            onChange={handleFormInputChange}
+                                        />
+                                    </div>
+
+                                    <div style={formFieldStyle}>
+                                        <label>Phone *</label>
+                                        <input
+                                            style={formInputStyle}
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleFormInputChange}
+                                        />
+                                        {formErrors.phone && <span style={errorTextStyle}>{formErrors.phone}</span>}
+                                    </div>
+
+                                    <div style={formFieldStyle}>
+                                        <label>Alternate Phone</label>
+                                        <input
+                                            style={formInputStyle}
+                                            name="alternatePhone"
+                                            value={formData.alternatePhone}
+                                            onChange={handleFormInputChange}
+                                        />
+                                    </div>
+
+                                    <div style={formFieldStyle}>
+                                        <label>Course Fee</label>
+                                        <input
+                                            style={formInputStyle}
+                                            name="courseFee"
+                                            value={formData.courseFee}
+                                            onChange={handleFormInputChange}
+                                        />
+                                    </div>
+
+                                    <div style={formFieldStyle}>
+                                        <label>Location</label>
+                                        <input
+                                            style={formInputStyle}
+                                            name="location"
+                                            value={formData.location}
+                                            onChange={handleFormInputChange}
+                                        />
+                                    </div>
+
+                                    <div style={formFieldStyle}>
+                                        <label>Sales Agent</label>
+                                        <input
+                                            style={formInputStyle}
+                                            name="salesAgent"
+                                            value={formData.salesAgent}
+                                            onChange={handleFormInputChange}
+                                        />
+                                    </div>
+
+                                    <div style={formFieldStyle}>
+                                        <label>Course</label>
+                                        <input
+                                            style={formInputStyle}
+                                            name="courseType"
+                                            value={formData.courseType}
+                                            onChange={handleFormInputChange}
+                                        />
+                                    </div>
+
+                                    <div style={formFieldStyle}>
+                                        <label>Date of Joining</label>
+                                        <input
+                                            style={formInputStyle}
+                                            type="date"
+                                            name="date"
+                                            value={formData.date}
+                                            onChange={handleFormInputChange}
+                                        />
+                                    </div>
+
+                                    <div style={formFieldStyle}>
+                                        <label>Course Plan</label>
+                                        <select
+                                            style={formInputStyle}
+                                            name="coursePlan"
+                                            value={formData.coursePlan}
+                                            onChange={handleFormInputChange}
+                                        >
+                                            <option value="">Select plan</option>
+                                            <option value="Gold">Gold</option>
+                                            <option value="Diamond">Diamond</option>
+                                            <option value="Diamond Plus">Diamond Plus</option>
+                                            <option value="Platinum">Platinum</option>
+                                            <option value="Titanium">Titanium</option>
+                                            <option value="Titanium Plus">Titanium Plus</option>
+                                        </select>
+                                    </div>
+
+                                    <div style={formFieldStyle}>
+                                        <label>Courses Taken</label>
+                                        <input
+                                            style={formInputStyle}
+                                            name="coursesTaken"
+                                            value={formData.coursesTaken}
+                                            onChange={handleFormInputChange}
+                                        />
+                                    </div>
+
+                                    <div style={formFieldStyle}>
+                                        <label>Course Type</label>
+                                        <select
+                                            style={formInputStyle}
+                                            name="courseType1"
+                                            value={formData.courseType1}
+                                            onChange={handleFormInputChange}
+                                        >
+                                            <option value="">Select type</option>
+                                            <option value="Live">Live</option>
+                                            <option value="Recorded">Recorded</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <button type="submit" style={formSubmitButtonStyle} disabled={isFormSubmitting}>
+                                    {isFormSubmitting ? 'Saving…' : 'Save Student'}
+                                </button>
+
+                                {formStatus.message && (
+                                    <div style={{ ...formStatusStyle, color: formStatus.type === 'success' ? '#28a745' : '#dc3545' }}>
+                                        {formStatus.message}
+                                    </div>
+                                )}
+                            </form>
+                    </div>
+                </div>
+            )}
+
             {isEmailModalVisible && (
                 <div style={modalOverlayStyle}>
                     <div style={{ ...modalContentStyle, maxWidth: '720px' }}>
-                        <button
-                            type="button"
-                            style={modalCloseButtonStyle}
-                            onClick={() => setIsEmailModalVisible(false)}
-                            aria-label="Close"
-                        >
-                            ×
-                        </button>
-
                         <h3 style={{ marginTop: 0 }}>Send Email to Selected ({selectedEmails.size})</h3>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>From Email</label>
+                                <input
+                                    value={senderEmail || 'Not configured'}
+                                    readOnly
+                                    disabled
+                                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', backgroundColor: '#f3f4f6' }}
+                                />
+                                <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                                    Emails will be sent from this address
+                                </div>
+                            </div>
+
                             <input
                                 placeholder="Subject"
                                 value={emailSubject}
                                 onChange={(e) => setEmailSubject(e.target.value)}
                                 style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
                             />
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Reply-To (optional)</label>
+                                <input
+                                    placeholder="reply-to@example.com, other@example.com"
+                                    value={emailReplyTo}
+                                    onChange={(e) => {
+                                        didUserTouchReplyToRef.current = true;
+                                        setEmailReplyTo(e.target.value);
+                                    }}
+                                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                                />
+                                <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                                    Replies will be sent to this address by default.
+                                    <br />
+                                    You can change or clear it.
+                                    <br />
+                                    If cleared, replies will go to the sender email.
+                                </div>
+                            </div>
 
                             <textarea
                                 placeholder="Message (HTML allowed)"
@@ -2184,26 +2630,15 @@ function Checking() {
                 </div>
             )}
 
-            {/* Small toast for success */}
             {successMessage && (
                 <div style={{ position: 'fixed', right: '16px', top: '16px', background: '#28a745', color: 'white', padding: '10px 14px', borderRadius: '6px', zIndex: 10000 }}>
                     {successMessage}
                 </div>
             )}
 
-            {/* Results modal: shows per-recipient send status returned by backend */}
             {isResultsModalVisible && (
                 <div style={modalOverlayStyle}>
                     <div style={{ ...modalContentStyle, maxWidth: '720px' }}>
-                        <button
-                            type="button"
-                            style={modalCloseButtonStyle}
-                            onClick={() => setIsResultsModalVisible(false)}
-                            aria-label="Close"
-                        >
-                            ×
-                        </button>
-
                         <h3 style={{ marginTop: 0 }}>Email send results</h3>
 
                         <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
@@ -2231,15 +2666,6 @@ function Checking() {
             {isDebugModalVisible && (
                 <div style={modalOverlayStyle}>
                     <div style={{ ...modalContentStyle, maxWidth: '720px' }}>
-                        <button
-                            type="button"
-                            style={modalCloseButtonStyle}
-                            onClick={() => setIsDebugModalVisible(false)}
-                            aria-label="Close"
-                        >
-                            ×
-                        </button>
-
                         <h3 style={{ marginTop: 0 }}>Debug Fetch Preview</h3>
 
                         <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
@@ -2261,132 +2687,8 @@ function Checking() {
                     </div>
                 </div>
             )}
-
-            {filteredResults.length > 0 && (
-                <div style={tableContainerStyle}>
-                    <table style={tableStyle}>
-                        <thead>
-                            <tr>
-                                <th style={{ ...thStyle, textAlign: 'center' }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={areAllSelectableSelected}
-                                        onChange={toggleSelectAll}
-                                        title="Select all visible"
-                                        style={checkboxStyle}
-                                    />
-                                </th>
-                                <th style={thStyle}>Searched Value</th>
-                                <th style={thStyle}>Full Name</th>
-                                <th style={thStyle}>Course Fees</th>
-                                <th style={thStyle}>Course Type</th>
-                                <th style={thStyle}>Course Type 1</th>
-                                <th style={thStyle}>Course Plan</th>
-                                <th style={thStyle}>Location</th>
-                                <th style={thStyle}>Date of Joining</th>
-                                <th style={thStyle}>Microdegree Student</th>
-                                {activeSearchType === 'phone' && <th style={thStyle}>Email</th>}
-                                {activeSearchType === 'email' && <th style={thStyle}>Contact No.</th>}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredResults.map((item, index) => (
-                                <tr key={item.id || index} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#fbfbfb' }}>
-                                    <td style={tdStyle}>
-                                        { /* Checkbox for selecting recipient (only when email is available) */ }
-                                        {item.foundEmail && item.foundEmail !== 'N/A' && item.foundEmail !== 'Error' && item.foundEmail !== 'Not Found' ? (
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedEmails.has(item.foundEmail)}
-                                                    onChange={() => toggleSelectEmail(item.foundEmail)}
-                                                    title={`Select ${item.foundEmail}`}
-                                                    style={checkboxStyle}
-                                                />
-                                        ) : (
-                                            <input type="checkbox" disabled title="No valid email" style={{ ...checkboxStyle, opacity: 0.45 }} />
-                                        )}
-                                    </td>
-                                    <td style={tdStyle}>
-                                        {item.value}
-                                        {item.value !== 'N/A' && item.value !== 'Error' && item.value !== 'Not Found' && (
-                                            <button
-                                                onClick={() => copyToClipboard(item.value, index, 'searched')}
-                                                style={copyButtonStyle}
-                                            >
-                                                <FontAwesomeIcon icon={faCopy} style={{ color: 'black', fontSize: '1.2em' }} />
-                                            </button>
-                                        )}
-                                        {copiedIndex === index && <span style={copiedMessageStyle}>Copied!</span>}
-                                    </td>
-
-                                    <td style={tdStyle}>{item.fullName}</td>
-                                    <td style={tdStyle}>{item.courseFees}</td>
-
-                                    <td style={tdStyle}>
-                                        {item.courseType || 'N/A'}
-                                    </td>
-
-                                    <td style={tdStyle}>
-                                        {item.courseType1 || 'N/A'}
-                                    </td>
-
-                                    <td style={tdStyle}>
-                                        {item.coursePlan || 'N/A'}
-                                    </td>
-
-                                    <td style={tdStyle}>
-                                        {item.location || 'N/A'}
-                                    </td>
-
-                                    <td style={tdStyle}>
-                                        {item.joiningDateDisplay || 'N/A'}
-                                    </td>
-
-                                    <td style={{
-                                        ...tdStyle,
-                                        fontWeight: 'bold',
-                                        color: item.microdegreeStudentStatus === 'Yes student found' ? 'green' : 'red'
-                                    }}>
-                                        {item.microdegreeStudentStatus}
-                                    </td>
-
-                                    {activeSearchType === 'phone' && (
-                                        <td style={tdStyle}>
-                                            {item.foundEmail}
-                                            {item.foundEmail !== 'N/A' && item.foundEmail !== 'Error' && item.foundEmail !== 'Not Found' && (
-                                                <button
-                                                    onClick={() => copyToClipboard(item.foundEmail, index, 'email')}
-                                                    style={copyButtonStyle}
-                                                >
-                                                    <FontAwesomeIcon icon={faCopy} style={{ color: 'black', fontSize: '1.2em' }} />
-                                                </button>
-                                            )}
-                                            {copiedEmailIndex === index && <span style={copiedMessageStyle}>Copied!</span>}
-                                        </td>
-                                    )}
-
-                                    {activeSearchType === 'email' && (
-                                        <td style={tdStyle}>
-                                            {item.foundPhone}
-                                            {item.foundPhone !== 'N/A' && item.foundPhone !== 'Error' && item.foundPhone !== 'Not Found' && (
-                                                <button
-                                                    onClick={() => copyToClipboard(item.foundPhone, index, 'phone')}
-                                                    style={copyButtonStyle}
-                                                >
-                                                    <FontAwesomeIcon icon={faCopy} style={{ color: 'black', fontSize: '1.2em' }} />
-                                                </button>
-                                            )}
-                                            {copiedEmailIndex === index && <span style={copiedMessageStyle}>Copied!</span>}
-                                        </td>
-                                    )}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
                 </div>
-            )}
-        </div>
-    );
+        );
 }
 
 export default Checking;

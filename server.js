@@ -3,6 +3,8 @@ const cors = require('cors');
 const nodemailer = require('nodemailer');
 const dotenv = require('dotenv');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 dotenv.config();
 
@@ -38,6 +40,15 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
+// Serve the React build (so client-side routes like /checking work)
+const clientBuildPath = path.join(__dirname, 'build');
+const clientIndexHtml = path.join(clientBuildPath, 'index.html');
+const hasClientBuild = fs.existsSync(clientIndexHtml);
+
+if (hasClientBuild) {
+  app.use(express.static(clientBuildPath));
+}
+
 // Multer for handling multipart/form-data (attachments)
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -49,9 +60,14 @@ const upload = multer({
 // Validate environment variables
 const EMAIL_USER = process.env.EMAIL_USER; // your Gmail address
 const EMAIL_APP_PASSWORD = process.env.EMAIL_APP_PASSWORD; // Gmail App Password
+const DEFAULT_REPLY_TO_EMAIL = process.env.DEFAULT_REPLY_TO_EMAIL || null;
 
-if (!EMAIL_USER || !EMAIL_APP_PASSWORD) {
-  console.warn('Warning: EMAIL_USER or EMAIL_APP_PASSWORD not set in environment. server may fail to send emails.');
+const IS_EMAIL_CONFIGURED = Boolean(EMAIL_USER && EMAIL_APP_PASSWORD);
+
+if (!IS_EMAIL_CONFIGURED) {
+  console.warn(
+    'Email is NOT configured. The server will run, but email sending is disabled.'
+  );
 }
 
 // Initialize transporter (supports Gmail with App Password, or Ethereal for dev)
@@ -60,6 +76,10 @@ const useEthereal = process.env.USE_ETHEREAL === 'true';
 let SENDER_EMAIL = EMAIL_USER || null;
 
 const initTransporter = async () => {
+  if (!IS_EMAIL_CONFIGURED && !useEthereal) {
+  console.warn('Skipping transporter initialization because email is not configured.');
+  return;
+  }
   if (useEthereal) {
     console.log('Using Ethereal test account for email (development)');
     const testAccount = await nodemailer.createTestAccount();
@@ -94,16 +114,72 @@ const initTransporter = async () => {
 };
 
 app.get('/', (req, res) => {
-  res.json({ status: 'ok', message: 'Bulk email server running' });
+  if (hasClientBuild) {
+    return res.sendFile(clientIndexHtml);
+  }
+  return res.json({ status: 'ok', message: 'Bulk email server running' });
+});
+
+// Expose server-configured sender email for UI display only.
+// Clients cannot override the From address.
+app.get('/email-config', (req, res) => {
+  return res.json({
+    senderEmail: SENDER_EMAIL || EMAIL_USER || null,
+    defaultReplyToEmail: DEFAULT_REPLY_TO_EMAIL,
+    isConfigured: IS_EMAIL_CONFIGURED || useEthereal,
+  });
 });
 
 // POST /send-bulk-email
 // JSON: { emails: [...], subject: '...', message: '<html>...</html>' }
 // or multipart/form-data with fields: subject, message, emails(JSON string), attachments (files)
 app.post('/send-bulk-email', upload.array('attachments'), async (req, res) => {
+  if (!IS_EMAIL_CONFIGURED && !useEthereal) {
+  return res.status(503).json({
+    error: 'Email service is not configured on the server',
+  });
+}
+if (!transporter) {
+  return res.status(503).json({
+    error: 'Email transporter is not initialized',
+  });
+}
+
   try {
     const body = req.body || {};
-    let { emails, subject, message } = body;
+    let { emails, subject, message, replyTo } = body;
+
+    const normalizeReplyTo = (value) => {
+      if (value === null || value === undefined) return null;
+      const str = String(value).trim();
+      if (!str) return null;
+
+      const parts = str
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean);
+
+      if (parts.length === 0) return null;
+
+      // Basic email validation (kept intentionally lightweight)
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const invalid = parts.filter((p) => !emailRe.test(p));
+      if (invalid.length > 0) {
+        return { error: `Invalid replyTo email(s): ${invalid.join(', ')}` };
+      }
+
+      // Deduplicate case-insensitively
+      const seen = new Set();
+      const unique = [];
+      for (const p of parts) {
+        const key = p.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        unique.push(p);
+      }
+
+      return unique.join(', ');
+    };
 
     // If emails was sent as JSON string in multipart/form-data, parse it
     if (typeof emails === 'string') {
@@ -119,6 +195,11 @@ app.post('/send-bulk-email', upload.array('attachments'), async (req, res) => {
     }
     if (!subject || !message) {
       return res.status(400).json({ error: 'subject and message are required' });
+    }
+
+    const normalizedReplyTo = normalizeReplyTo(replyTo);
+    if (normalizedReplyTo && typeof normalizedReplyTo === 'object' && normalizedReplyTo.error) {
+      return res.status(400).json({ error: normalizedReplyTo.error });
     }
 
     // Normalize recipients: accept array of strings or objects { email, name }
@@ -151,6 +232,7 @@ app.post('/send-bulk-email', upload.array('attachments'), async (req, res) => {
         from: SENDER_EMAIL || EMAIL_USER || 'no-reply@example.com',
         to: rcpt.email,
         subject: subject,
+        ...(normalizedReplyTo ? { replyTo: normalizedReplyTo } : {}),
         html: personalHtml,
         attachments,
       };
@@ -175,6 +257,16 @@ app.post('/send-bulk-email', upload.array('attachments'), async (req, res) => {
     return res.status(500).json({ error: 'Failed to send emails', details: err.message });
   }
 });
+
+// SPA fallback: send index.html for any GET route not handled above
+// This enables refresh/deep-links like /checking to work.
+if (hasClientBuild) {
+  // Express 5 + path-to-regexp v6 doesn't accept '*' as a path string.
+  // Use a RegExp catch-all instead for SPA routing (e.g., /checking).
+  app.get(/.*/, (req, res) => {
+    res.sendFile(clientIndexHtml);
+  });
+}
 
 // Initialize transporter then start server
 initTransporter().then(() => {
