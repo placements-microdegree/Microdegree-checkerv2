@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import "./Dashboard.css";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const supabase = createClient(
   "https://zcthupxqotcgbsztzivn.supabase.co",
@@ -25,7 +25,6 @@ function Dashboard() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const navigate = useNavigate();
   const handleClick = () => {
     window.open("https://teal-parfait-cc7fde.netlify.app", "_blank");
   };
