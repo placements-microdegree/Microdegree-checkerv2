@@ -737,7 +737,7 @@ function Checking() {
     // Email selection + sending state
     const [selectedEmails, setSelectedEmails] = useState(new Set());
     const [emailSubject, setEmailSubject] = useState('');
-    const [emailReplyTo, setEmailReplyTo] = useState('');
+    const [emailReplyTo, setEmailReplyTo] = useState(null);
     const didUserTouchReplyToRef = useRef(false);
     const [emailBody, setEmailBody] = useState('');
     const [emailAttachments, setEmailAttachments] = useState([]);
@@ -789,13 +789,21 @@ function Checking() {
 
                 // Prefill Reply-To with the configured default, unless the user already started editing.
                 if (!didUserTouchReplyToRef.current) {
-                    setEmailReplyTo(nextDefaultReplyTo);
+                    setEmailReplyTo((prev) => {
+                        if (didUserTouchReplyToRef.current) return prev;
+                        const isEmpty = (prev === null || String(prev).trim() === '');
+                        if (!isEmpty) return prev;
+                        return nextDefaultReplyTo ? nextDefaultReplyTo : null;
+                    });
                 }
             } catch (e) {
                 if (cancelled) return;
                 setSenderEmail('');
                 if (!didUserTouchReplyToRef.current) {
-                    setEmailReplyTo('');
+                    setEmailReplyTo((prev) => {
+                        if (didUserTouchReplyToRef.current) return prev;
+                        return null;
+                    });
                 }
             }
         })();
@@ -1867,7 +1875,7 @@ function Checking() {
                 setTimeout(() => setSuccessMessage(''), 3000);
                 setSelectedEmails(new Set());
                 setEmailSubject('');
-                setEmailReplyTo('');
+                setEmailReplyTo(null);
                 setEmailBody('');
                 setEmailAttachments([]);
                 setIsEmailModalVisible(false);
@@ -2533,7 +2541,7 @@ function Checking() {
                                 <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Reply-To (optional)</label>
                                 <input
                                     placeholder="reply-to@example.com, other@example.com"
-                                    value={emailReplyTo}
+                                    value={emailReplyTo ?? ''}
                                     onChange={(e) => {
                                         didUserTouchReplyToRef.current = true;
                                         setEmailReplyTo(e.target.value);
