@@ -1072,9 +1072,6 @@ function Checking() {
         if (!formData.firstName.trim()) {
             errors.firstName = 'First name is required';
         }
-        if (!formData.lastName.trim()) {
-            errors.lastName = 'Last name is required';
-        }
         if (!formData.email.trim()) {
             errors.email = 'Email is required';
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
@@ -1125,7 +1122,7 @@ function Checking() {
         const payload = {
             // id and created_at are NOT sent so Supabase can auto-generate them
             first_name: formData.firstName.trim(),
-            last_name: formData.lastName.trim(),
+            last_name: formData.lastName.trim() || null,
             email: formData.email.trim(),
             alternate_email: formData.alternateEmail.trim() || null,
             phone: formData.phone.trim(),
@@ -2338,11 +2335,11 @@ function Checking() {
 
                         <form onSubmit={handleFormSubmit}>
                             <div style={{ margin: '0 0 12px 0', color: '#64748b', fontSize: '13px' }}>
-                                Mandatory fields: First Name, Last Name, Email, Phone
+                                Fields marked * are mandatory
                             </div>
                             <div style={formGridStyle}>
                                 <div style={formFieldStyle}>
-                                    <label>First Name</label>
+                                    <label>First Name *</label>
                                     <input
                                         style={formInputStyle}
                                             name="firstName"
@@ -2364,7 +2361,7 @@ function Checking() {
                                     </div>
 
                                     <div style={formFieldStyle}>
-                                        <label>Email</label>
+                                        <label>Email *</label>
                                         <input
                                             style={formInputStyle}
                                             name="email"
@@ -2386,7 +2383,7 @@ function Checking() {
                                     </div>
 
                                     <div style={formFieldStyle}>
-                                        <label>Phone</label>
+                                        <label>Phone *</label>
                                         <input
                                             style={formInputStyle}
                                             name="phone"
