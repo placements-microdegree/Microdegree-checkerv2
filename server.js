@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
+// Email sending migrated to Pabbly Webhook (frontend-based)
+// Backend email logic kept for rollback/reference
+// const nodemailer = require('nodemailer');
 const dotenv = require('dotenv');
 const multer = require('multer');
 const path = require('path');
@@ -10,6 +12,12 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Email sending migrated to Pabbly Webhook (frontend-based)
+// Backend email logic kept for rollback/reference
+// Read-only email identity configuration for UI display
+const EMAIL_FROM = process.env.EMAIL_FROM || null;
+const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || null;
 
 // For local development reflect the requesting Origin so frontend dev servers
 // running on different ports (3000, 5001, etc.) can reach this API.
@@ -57,6 +65,10 @@ const upload = multer({
   },
 });
 
+/*
+// Email sending migrated to Pabbly Webhook (frontend-based)
+// Backend email logic kept for rollback/reference
+
 // Validate environment variables
 const EMAIL_USER = process.env.EMAIL_USER; // your Gmail address
 const EMAIL_APP_PASSWORD = process.env.EMAIL_APP_PASSWORD; // Gmail App Password
@@ -77,8 +89,8 @@ let SENDER_EMAIL = EMAIL_USER || null;
 
 const initTransporter = async () => {
   if (!IS_EMAIL_CONFIGURED && !useEthereal) {
-  console.warn('Skipping transporter initialization because email is not configured.');
-  return;
+    console.warn('Skipping transporter initialization because email is not configured.');
+    return;
   }
   if (useEthereal) {
     console.log('Using Ethereal test account for email (development)');
@@ -112,6 +124,7 @@ const initTransporter = async () => {
     console.error('Nodemailer transporter verification failed:', err);
   }
 };
+*/
 
 app.get('/', (req, res) => {
   if (hasClientBuild) {
@@ -120,8 +133,24 @@ app.get('/', (req, res) => {
   return res.json({ status: 'ok', message: 'Bulk email server running' });
 });
 
+// Read-only config endpoint for frontend display.
+// Email sending migrated to Pabbly Webhook (frontend-based)
+// Backend email logic kept for rollback/reference
+app.get('/email-config', (req, res) => {
+  return res.json({
+    emailFrom: EMAIL_FROM,
+    emailReplyTo: EMAIL_REPLY_TO,
+    // Backward-compatible keys (older frontend expected these)
+    senderEmail: EMAIL_FROM,
+    replyToEmail: EMAIL_REPLY_TO,
+  });
+});
+
 // Expose server-configured sender email for UI display only.
 // Clients cannot override the From address.
+/*
+// Email sending migrated to Pabbly Webhook (frontend-based)
+// Backend email logic kept for rollback/reference
 app.get('/email-config', (req, res) => {
   return res.json({
     senderEmail: SENDER_EMAIL || EMAIL_USER || null,
@@ -129,10 +158,14 @@ app.get('/email-config', (req, res) => {
     isConfigured: IS_EMAIL_CONFIGURED || useEthereal,
   });
 });
+*/
 
 // POST /send-bulk-email
 // JSON: { emails: [...], subject: '...', message: '<html>...</html>' }
 // or multipart/form-data with fields: subject, message, emails(JSON string), attachments (files)
+/*
+// Email sending migrated to Pabbly Webhook (frontend-based)
+// Backend email logic kept for rollback/reference
 app.post('/send-bulk-email', upload.array('attachments'), async (req, res) => {
   if (!IS_EMAIL_CONFIGURED && !useEthereal) {
   return res.status(503).json({
@@ -257,6 +290,7 @@ if (!transporter) {
     return res.status(500).json({ error: 'Failed to send emails', details: err.message });
   }
 });
+*/
 
 // SPA fallback: send index.html for any GET route not handled above
 // This enables refresh/deep-links like /checking to work.
@@ -268,11 +302,9 @@ if (hasClientBuild) {
   });
 }
 
-// Initialize transporter then start server
-initTransporter().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Bulk email server listening on port ${PORT}`);
-  });
-}).catch(err => {
-  console.error('Failed to initialize transporter, server not started:', err);
+// Email sending migrated to Pabbly Webhook (frontend-based)
+// Backend email logic kept for rollback/reference
+// Start server normally (no Nodemailer init at runtime)
+app.listen(PORT, () => {
+  console.log(`Bulk email server listening on port ${PORT}`);
 });

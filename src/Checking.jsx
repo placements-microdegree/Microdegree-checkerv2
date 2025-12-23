@@ -5,6 +5,8 @@ import { supabase } from './supabaseClient'; // Make sure this path is correct f
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy } from '@fortawesome/free-solid-svg-icons';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 // Inline styles
 const containerStyle = {
     padding: '16px 0 24px 0',
@@ -696,6 +698,9 @@ const modalContentStyle = {
 const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function Checking() {
+    const PABBLY_WEBHOOK_URL = process.env.REACT_APP_PABBLY_WEBHOOK_URL;
+    const ENV_EMAIL_FROM = process.env.REACT_APP_EMAIL_FROM;
+    const ENV_EMAIL_REPLY_TO = process.env.REACT_APP_EMAIL_REPLY_TO;
     const [isAuthenticated, setIsAuthenticated] = useState(null);
 
     const [searchInput, setSearchInput] = useState('');
@@ -738,9 +743,14 @@ function Checking() {
     const [selectedEmails, setSelectedEmails] = useState(new Set());
     const [emailSubject, setEmailSubject] = useState('');
     const [emailReplyTo, setEmailReplyTo] = useState(null);
-    const didUserTouchReplyToRef = useRef(false);
+    const [toEmailPills, setToEmailPills] = useState([]);
+    const [toEmailDraft, setToEmailDraft] = useState('');
+    const [toEmailsError, setToEmailsError] = useState('');
+    const prevEmailModalVisibleRef = useRef(false);
     const [emailBody, setEmailBody] = useState('');
-    const [emailAttachments, setEmailAttachments] = useState([]);
+    // Attachments currently disabled (not required).
+    // Kept commented for rollback/reference.
+    // const [emailAttachments, setEmailAttachments] = useState([]);
     const [senderEmail, setSenderEmail] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [isEmailModalVisible, setIsEmailModalVisible] = useState(false);
@@ -775,41 +785,100 @@ function Checking() {
     useEffect(() => {
         if (!isEmailModalVisible) return;
 
-        // When opening the modal, treat Reply-To as untouched until the user edits it.
-        didUserTouchReplyToRef.current = false;
-
         let cancelled = false;
         (async () => {
-            try {
-                const resp = await fetch('http://localhost:5000/email-config');
-                const data = await resp.json();
+            // Email sending migrated to Pabbly Webhook (frontend-based)
+            // Backend email logic kept for rollback/reference
+            // Sender/Reply-To are system-level configuration and read-only in UI.
+            const applyConfig = (fromValue, replyToValue) => {
                 if (cancelled) return;
-                setSenderEmail((data && data.senderEmail) ? String(data.senderEmail) : '');
-                const nextDefaultReplyTo = (data && data.defaultReplyToEmail) ? String(data.defaultReplyToEmail) : '';
+                const nextFrom = (fromValue && String(fromValue).trim()) ? String(fromValue).trim() : '';
+                const nextReplyTo = (replyToValue && String(replyToValue).trim()) ? String(replyToValue).trim() : '';
+                setSenderEmail(nextFrom);
+                setEmailReplyTo(nextReplyTo ? nextReplyTo : null);
+            };
 
-                // Prefill Reply-To with the configured default, unless the user already started editing.
-                if (!didUserTouchReplyToRef.current) {
-                    setEmailReplyTo((prev) => {
-                        if (didUserTouchReplyToRef.current) return prev;
-                        const isEmpty = (prev === null || String(prev).trim() === '');
-                        if (!isEmpty) return prev;
-                        return nextDefaultReplyTo ? nextDefaultReplyTo : null;
-                    });
+            // 1) Prefer backend read-only API if available
+            try {
+                // Try same-origin first (production-safe)
+                let resp;
+                try {
+                    resp = await fetch('/email-config');
+                } catch (e) {
+                    resp = null;
+                }
+                // Fall back to local dev server if needed
+                if (!resp || !resp.ok) {
+                    resp = await fetch('http://localhost:5000/email-config');
+                }
+
+                if (resp && resp.ok) {
+                    const data = await resp.json();
+                    const from = data?.emailFrom ?? data?.senderEmail ?? null;
+                    const replyTo = data?.emailReplyTo ?? data?.replyToEmail ?? null;
+                    applyConfig(from, replyTo);
+                    return;
                 }
             } catch (e) {
-                if (cancelled) return;
-                setSenderEmail('');
-                if (!didUserTouchReplyToRef.current) {
-                    setEmailReplyTo((prev) => {
-                        if (didUserTouchReplyToRef.current) return prev;
-                        return null;
-                    });
-                }
+                // ignore and fall back to build-time env
             }
+
+            // 2) Fallback: build-time env vars (backend unavailable)
+            applyConfig(ENV_EMAIL_FROM, ENV_EMAIL_REPLY_TO);
         })();
 
-        return () => { cancelled = true; };
-    }, [isEmailModalVisible]);
+        return () => {
+            cancelled = true;
+        };
+    }, [isEmailModalVisible, ENV_EMAIL_FROM, ENV_EMAIL_REPLY_TO]);
+
+    const addToEmailPills = (raw) => {
+        const tokens = String(raw || '')
+            .split(/[\s,;\n]+/g)
+            .map((t) => t.trim())
+            .filter(Boolean);
+
+        if (tokens.length === 0) return;
+
+        setToEmailPills((prev) => {
+            const seen = new Set(prev.map((e) => e.toLowerCase()));
+            const next = [...prev];
+            tokens.forEach((t) => {
+                if (!EMAIL_RE.test(t)) return;
+                const key = t.toLowerCase();
+                if (seen.has(key)) return;
+                seen.add(key);
+                next.push(t);
+            });
+            return next;
+        });
+    };
+
+    // Prefill the pill-based "To" field from current selections when opening the modal.
+    useEffect(() => {
+        const wasOpen = prevEmailModalVisibleRef.current;
+        if (isEmailModalVisible && !wasOpen) {
+            setToEmailsError('');
+            setToEmailDraft('');
+
+            // Build initial pills from selected emails
+            const initial = Array.from(selectedEmails)
+                .filter(Boolean)
+                .filter((e) => EMAIL_RE.test(String(e).trim()))
+                .map((e) => String(e).trim());
+
+            const seen = new Set();
+            const unique = [];
+            initial.forEach((e) => {
+                const key = e.toLowerCase();
+                if (seen.has(key)) return;
+                seen.add(key);
+                unique.push(e);
+            });
+            setToEmailPills(unique);
+        }
+        prevEmailModalVisibleRef.current = isEmailModalVisible;
+    }, [isEmailModalVisible, selectedEmails]);
 
     if (isAuthenticated===false) {
         return (
@@ -1792,6 +1861,9 @@ function Checking() {
         }
     };
 
+    // Attachments currently disabled (not required).
+    // Kept commented for rollback/reference.
+    /*
     const handleAttachmentChange = (event) => {
         const files = Array.from(event.target.files || []);
         if (files.length === 0) return;
@@ -1813,74 +1885,93 @@ function Checking() {
     const removeAttachment = (id) => {
         setEmailAttachments((prev) => prev.filter((att) => att.id !== id));
     };
+    */
 
     const sendBulkEmail = async () => {
-        const emails = Array.from(selectedEmails).filter(Boolean);
+        const emails = Array.from(toEmailPills);
         if (emails.length === 0) {
-            alert('Please select at least one recipient.');
+            setToEmailsError('Please add at least one recipient email.');
+            alert('Please add at least one recipient email.');
             return;
         }
         if (!emailSubject.trim() || !emailBody.trim()) {
             alert('Please provide both subject and message body.');
             return;
         }
+        if (!PABBLY_WEBHOOK_URL || !String(PABBLY_WEBHOOK_URL).trim()) {
+            alert('Pabbly webhook URL is not configured. Set REACT_APP_PABBLY_WEBHOOK_URL and retry.');
+            return;
+        }
 
         setIsSending(true);
         try {
             // Prepare recipients as objects with email + name (if available from results)
-            const recipients = emails.map(e => {
-                const found = results.find(r => (r.foundEmail || '').toLowerCase() === (e || '').toLowerCase());
-                return { email: e, name: found ? found.fullName : null };
+            const recipients = emails.map((e) => {
+                const found = results.find(
+                    (r) => (r.foundEmail || '').toLowerCase() === (e || '').toLowerCase()
+                );
+                return { email: e, name: found ? found.fullName : '' };
             });
 
-            const formData = new FormData();
-            formData.append('subject', emailSubject);
-            // Reply-To is optional:
-            // - If user leaves default untouched, we send that default.
-            // - If user clears the field, we omit replyTo so replies go to From email.
-            if (emailReplyTo && emailReplyTo.trim()) {
-                formData.append('replyTo', emailReplyTo);
-            }
-            formData.append('message', emailBody);
-            formData.append('emails', JSON.stringify(recipients));
+            // Email sending migrated to Pabbly Webhook (frontend-based)
+            // Backend email logic kept for rollback/reference
+            // Attachments are intentionally ignored
+            // Reply-To is configured in Pabbly SMTP settings, do not send replyTo from frontend
+            const sendPromises = recipients.map(async (rcpt) => {
+                try {
+                    const resp = await fetch(PABBLY_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            email: rcpt.email,
+                            name: rcpt.name || '',
+                            subject: emailSubject,
+                            message: emailBody,
+                        }),
+                    });
 
-            emailAttachments.forEach((att) => {
-                if (att.file) {
-                    formData.append('attachments', att.file, att.name);
+                    if (!resp.ok) {
+                        let text = '';
+                        try {
+                            text = await resp.text();
+                        } catch (e) {
+                            text = '';
+                        }
+                        return { to: rcpt.email, success: false, error: text || `HTTP ${resp.status}` };
+                    }
+                    return { to: rcpt.email, success: true };
+                } catch (err) {
+                    return { to: rcpt.email, success: false, error: err.message };
                 }
             });
 
-            const resp = await fetch('http://localhost:5000/send-bulk-email', {
-                method: 'POST',
-                body: formData,
-            });
-            let data = null;
-            try {
-                data = await resp.json();
-            } catch (e) {
-                console.warn('No JSON response from send-bulk-email', e);
-            }
-            // Always set results modal if backend returned per-recipient results
-            if (data && Array.isArray(data.results)) {
-                setSendResults(data.results);
-                setIsResultsModalVisible(true);
-            }
+            const settled = await Promise.allSettled(sendPromises);
+            const resultsArr = settled.map((s) =>
+                s.status === 'fulfilled' ? s.value : { to: 'unknown', success: false, error: 'send promise rejected' }
+            );
 
-            if (resp.ok && data && data.success) {
+            setSendResults(resultsArr);
+            setIsResultsModalVisible(true);
+
+            const allOk = resultsArr.length > 0 && resultsArr.every((r) => r.success === true);
+            if (allOk) {
                 // show light-weight toast
                 setSuccessMessage('Emails sent successfully');
                 setTimeout(() => setSuccessMessage(''), 3000);
                 setSelectedEmails(new Set());
                 setEmailSubject('');
                 setEmailReplyTo(null);
+                setToEmailPills([]);
+                setToEmailDraft('');
+                setToEmailsError('');
                 setEmailBody('');
-                setEmailAttachments([]);
+                // Attachments currently disabled (not required).
+                // setEmailAttachments([]);
                 setIsEmailModalVisible(false);
             } else {
-                console.error('Send error', { status: resp.status, data });
-                const errMsg = (data && (data.error || data.message)) ? (data.error || data.message) : `Server responded ${resp.status}`;
-                setEmailSendStatus({ type: 'error', text: 'Failed to send: ' + errMsg });
-                // show alert but still allow user to inspect per-recipient results
+                setEmailSendStatus({ type: 'error', text: 'Failed to send some or all emails.' });
                 alert('Failed to send some or all emails. See details in the results window.');
             }
         } catch (err) {
@@ -1890,6 +1981,12 @@ function Checking() {
             setIsSending(false);
         }
     };
+
+    const canSendEmail =
+        !isSending &&
+        toEmailPills.length > 0 &&
+        Boolean(emailSubject.trim()) &&
+        Boolean(emailBody.trim());
 
     const selectableEmails = getSelectableEmails();
     const areAllSelectableSelected = selectableEmails.length > 0 && selectableEmails.every(e => selectedEmails.has(e));
@@ -2513,10 +2610,26 @@ function Checking() {
 
             {isEmailModalVisible && (
                 <div style={modalOverlayStyle}>
-                    <div style={{ ...modalContentStyle, maxWidth: '720px' }}>
-                        <h3 style={{ marginTop: 0 }}>Send Email to Selected ({selectedEmails.size})</h3>
+                    <div
+                        style={{
+                            ...modalContentStyle,
+                            maxWidth: '720px',
+                            maxHeight: '90vh',
+                            height: '90vh',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            padding: 0,
+                        }}
+                    >
+                        {/* Fixed header (title only) */}
+                        <div style={{ padding: '18px 26px 0 26px' }}>
+                            <h3 style={{ margin: 0 }}>Send Email to Selected ({selectedEmails.size})</h3>
+                        </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {/* Scrollable body (form fields) */}
+                        <div style={{ padding: '14px 26px', overflowY: 'auto', flex: '1 1 auto' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>From Email</label>
                                 <input
@@ -2526,8 +2639,131 @@ function Checking() {
                                     style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', backgroundColor: '#f3f4f6' }}
                                 />
                                 <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
-                                    Emails will be sent from this address
+                                    Configured by system (Pabbly SMTP)
                                 </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Reply-To Email</label>
+                                <input
+                                    value={emailReplyTo ?? 'Not configured'}
+                                    readOnly
+                                    disabled
+                                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', backgroundColor: '#f3f4f6' }}
+                                />
+                                <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                                    Configured by system (Pabbly SMTP)
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>To</label>
+                                <div
+                                    style={{
+                                        padding: '8px',
+                                        borderRadius: '6px',
+                                        border: '1px solid #ccc',
+                                        minHeight: '44px',
+                                        maxHeight: '140px',
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: '6px',
+                                        alignItems: 'flex-start',
+                                        alignContent: 'flex-start',
+                                        overflowY: 'auto',
+                                        overflowX: 'hidden',
+                                        boxSizing: 'border-box',
+                                    }}
+                                    onClick={() => {
+                                        const el = document.getElementById('to-email-pill-input');
+                                        if (el) el.focus();
+                                    }}
+                                >
+                                    {toEmailPills.map((email) => (
+                                        <span
+                                            key={email.toLowerCase()}
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '5px',
+                                                padding: '3px 6px',
+                                                borderRadius: '999px',
+                                                backgroundColor: '#f3f4f6',
+                                                border: '1px solid #d1d5db',
+                                                fontSize: '0.78rem',
+                                                lineHeight: 1,
+                                            }}
+                                        >
+                                            <span>{email}</span>
+                                            <button
+                                                type="button"
+                                                aria-label={`Remove ${email}`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setToEmailPills((prev) => prev.filter((p) => p.toLowerCase() !== email.toLowerCase()));
+                                                    setToEmailsError('');
+                                                }}
+                                                style={{
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    color: '#b91c1c',
+                                                    fontWeight: 700,
+                                                    lineHeight: 1,
+                                                    padding: '2px',
+                                                    fontSize: '0.85rem',
+                                                }}
+                                            >
+                                                ✕
+                                            </button>
+                                        </span>
+                                    ))}
+
+                                    <input
+                                        id="to-email-pill-input"
+                                        value={toEmailDraft}
+                                        onChange={(e) => setToEmailDraft(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ',') {
+                                                e.preventDefault();
+                                                const raw = toEmailDraft;
+                                                addToEmailPills(raw);
+                                                setToEmailDraft('');
+                                                setToEmailsError('');
+                                            }
+                                            if (e.key === 'Backspace' && !toEmailDraft && toEmailPills.length > 0) {
+                                                // Backspace on empty draft removes the last pill
+                                                setToEmailPills((prev) => prev.slice(0, -1));
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            // On blur, commit whatever was typed
+                                            if (toEmailDraft && String(toEmailDraft).trim()) {
+                                                addToEmailPills(toEmailDraft);
+                                                setToEmailDraft('');
+                                                setToEmailsError('');
+                                            }
+                                        }}
+                                        placeholder={toEmailPills.length === 0 ? 'Type an email, press Enter or comma' : ''}
+                                        style={{
+                                            flex: '1 1 160px',
+                                            minWidth: '160px',
+                                            border: 'none',
+                                            outline: 'none',
+                                            fontSize: '0.9rem',
+                                            padding: '4px 4px',
+                                        }}
+                                    />
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                                    Press Enter or comma to add
+                                </div>
+                                {(toEmailsError || toEmailPills.length === 0) && (
+                                    <div style={{ color: '#dc3545', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                                        {toEmailsError || 'Please add at least one recipient email.'}
+                                    </div>
+                                )}
                             </div>
 
                             <input
@@ -2537,34 +2773,18 @@ function Checking() {
                                 style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
                             />
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Reply-To (optional)</label>
-                                <input
-                                    placeholder="reply-to@example.com, other@example.com"
-                                    value={emailReplyTo ?? ''}
-                                    onChange={(e) => {
-                                        didUserTouchReplyToRef.current = true;
-                                        setEmailReplyTo(e.target.value);
-                                    }}
-                                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-                                />
-                                <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
-                                    Replies will be sent to this address by default.
-                                    <br />
-                                    You can change or clear it.
-                                    <br />
-                                    If cleared, replies will go to the sender email.
-                                </div>
-                            </div>
-
                             <textarea
                                 placeholder="Message (HTML allowed)"
                                 value={emailBody}
                                 onChange={(e) => setEmailBody(e.target.value)}
                                 rows={8}
-                                style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                                style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', overflowY: 'auto', resize: 'vertical', maxHeight: '260px' }}
                             />
 
+                            {/* Attachments currently disabled (not required).
+                                Kept commented for rollback/reference.
+                            */}
+                            {/*
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
                                 <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Attachments</label>
                                 <input
@@ -2610,13 +2830,18 @@ function Checking() {
                                     </div>
                                 )}
                             </div>
+                            */}
 
                             {emailSendStatus.text && (
                                 <div style={{ color: emailSendStatus.type === 'error' ? '#dc3545' : '#28a745', fontWeight: 'bold' }}>
                                     {emailSendStatus.text}
                                 </div>
                             )}
+                        </div>
+                        </div>
 
+                        {/* Fixed footer (actions) */}
+                        <div style={{ padding: '14px 26px 18px 26px', borderTop: '1px solid #eee', flex: '0 0 auto' }}>
                             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                                 <button
                                     onClick={() => setIsEmailModalVisible(false)}
@@ -2627,7 +2852,7 @@ function Checking() {
 
                                 <button
                                     onClick={sendBulkEmail}
-                                    disabled={isSending || selectedEmails.size === 0 || !emailSubject.trim() || !emailBody.trim()}
+                                    disabled={!canSendEmail}
                                     style={{ ...formSubmitButtonStyle }}
                                 >
                                     {isSending ? 'Sending…' : 'Send'}
