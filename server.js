@@ -1,3 +1,12 @@
+/**
+ * NOTE:
+ * This backend file is intentionally disabled.
+ * Current architecture is frontend-only using:
+ * - Supabase (auth + DB)
+ * - Pabbly webhook (email sending)
+ * This file is kept for future backend expansion.
+ */
+
 const express = require('express');
 const cors = require('cors');
 // Email sending migrated to Pabbly Webhook (frontend-based)
@@ -140,9 +149,6 @@ app.get('/email-config', (req, res) => {
   return res.json({
     emailFrom: EMAIL_FROM,
     emailReplyTo: EMAIL_REPLY_TO,
-    // Backward-compatible keys (older frontend expected these)
-    senderEmail: EMAIL_FROM,
-    replyToEmail: EMAIL_REPLY_TO,
   });
 });
 
@@ -305,6 +311,10 @@ if (hasClientBuild) {
 // Email sending migrated to Pabbly Webhook (frontend-based)
 // Backend email logic kept for rollback/reference
 // Start server normally (no Nodemailer init at runtime)
-app.listen(PORT, () => {
-  console.log(`Bulk email server listening on port ${PORT}`);
-});
+// NOTE: Intentionally disabled.
+// This project is deployed as a static frontend (Netlify/Vercel/S3/Firebase Hosting).
+// Re-enable only if/when you intentionally add a backend deployment target.
+//
+// app.listen(PORT, () => {
+//   console.log(`Bulk email server listening on port ${PORT}`);
+// });

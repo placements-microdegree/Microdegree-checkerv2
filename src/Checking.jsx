@@ -798,6 +798,10 @@ function Checking() {
                 setEmailReplyTo(nextReplyTo ? nextReplyTo : null);
             };
 
+            // NOTE: Frontend-only architecture (static hosting).
+            // Do not depend on any backend endpoint like /email-config at runtime.
+            // Keep the previous /email-config fetch logic commented for future expansion.
+            /*
             // 1) Prefer backend read-only API if available
             try {
                 // Try same-origin first (production-safe)
@@ -806,10 +810,6 @@ function Checking() {
                     resp = await fetch('/email-config');
                 } catch (e) {
                     resp = null;
-                }
-                // Fall back to local dev server if needed
-                if (!resp || !resp.ok) {
-                    resp = await fetch('http://localhost:5000/email-config');
                 }
 
                 if (resp && resp.ok) {
@@ -822,8 +822,9 @@ function Checking() {
             } catch (e) {
                 // ignore and fall back to build-time env
             }
+            */
 
-            // 2) Fallback: build-time env vars (backend unavailable)
+            // Build-time env vars (required for static hosting)
             applyConfig(ENV_EMAIL_FROM, ENV_EMAIL_REPLY_TO);
         })();
 
@@ -1899,7 +1900,7 @@ function Checking() {
             return;
         }
         if (!PABBLY_WEBHOOK_URL || !String(PABBLY_WEBHOOK_URL).trim()) {
-            alert('Pabbly webhook URL is not configured. Set REACT_APP_PABBLY_WEBHOOK_URL and retry.');
+            alert('Pabbly webhook URL is not configured');
             return;
         }
 
