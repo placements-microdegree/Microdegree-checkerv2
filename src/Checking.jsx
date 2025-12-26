@@ -2686,13 +2686,14 @@ function Checking() {
                                             style={{
                                                 display: 'inline-flex',
                                                 alignItems: 'center',
-                                                gap: '5px',
-                                                padding: '3px 6px',
+                                                gap: '4px',
+                                                padding: '0px 6px',
                                                 borderRadius: '999px',
                                                 backgroundColor: '#f3f4f6',
                                                 border: '1px solid #d1d5db',
-                                                fontSize: '0.78rem',
-                                                lineHeight: 1,
+                                                fontSize: '0.74rem',
+                                                lineHeight: 1.1,
+                        
                                             }}
                                         >
                                             <span>{email}</span>
