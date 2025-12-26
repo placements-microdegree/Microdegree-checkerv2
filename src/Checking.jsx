@@ -742,7 +742,10 @@ function Checking() {
     // Email selection + sending state
     const [selectedEmails, setSelectedEmails] = useState(new Set());
     const [emailSubject, setEmailSubject] = useState('');
-    const [emailReplyTo, setEmailReplyTo] = useState(null);
+    const [emailReplyTo, setEmailReplyTo] = useState(() => {
+        const v = (ENV_EMAIL_REPLY_TO && String(ENV_EMAIL_REPLY_TO).trim()) ? String(ENV_EMAIL_REPLY_TO).trim() : '';
+        return v;
+    });
     const [toEmailPills, setToEmailPills] = useState([]);
     const [toEmailDraft, setToEmailDraft] = useState('');
     const [toEmailsError, setToEmailsError] = useState('');
@@ -751,7 +754,10 @@ function Checking() {
     // Attachments currently disabled (not required).
     // Kept commented for rollback/reference.
     // const [emailAttachments, setEmailAttachments] = useState([]);
-    const [senderEmail, setSenderEmail] = useState('');
+    const [senderEmail, setSenderEmail] = useState(() => {
+        const v = (ENV_EMAIL_FROM && String(ENV_EMAIL_FROM).trim()) ? String(ENV_EMAIL_FROM).trim() : '';
+        return v;
+    });
     const [isSending, setIsSending] = useState(false);
     const [isEmailModalVisible, setIsEmailModalVisible] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
@@ -784,53 +790,10 @@ function Checking() {
 
     useEffect(() => {
         if (!isEmailModalVisible) return;
-
-        let cancelled = false;
-        (async () => {
-            // Email sending migrated to Pabbly Webhook (frontend-based)
-            // Backend email logic kept for rollback/reference
-            // Sender/Reply-To are system-level configuration and read-only in UI.
-            const applyConfig = (fromValue, replyToValue) => {
-                if (cancelled) return;
-                const nextFrom = (fromValue && String(fromValue).trim()) ? String(fromValue).trim() : '';
-                const nextReplyTo = (replyToValue && String(replyToValue).trim()) ? String(replyToValue).trim() : '';
-                setSenderEmail(nextFrom);
-                setEmailReplyTo(nextReplyTo ? nextReplyTo : null);
-            };
-
-            // NOTE: Frontend-only architecture (static hosting).
-            // Do not depend on any backend endpoint like /email-config at runtime.
-            // Keep the previous /email-config fetch logic commented for future expansion.
-            /*
-            // 1) Prefer backend read-only API if available
-            try {
-                // Try same-origin first (production-safe)
-                let resp;
-                try {
-                    resp = await fetch('/email-config');
-                } catch (e) {
-                    resp = null;
-                }
-
-                if (resp && resp.ok) {
-                    const data = await resp.json();
-                    const from = data?.emailFrom ?? data?.senderEmail ?? null;
-                    const replyTo = data?.emailReplyTo ?? data?.replyToEmail ?? null;
-                    applyConfig(from, replyTo);
-                    return;
-                }
-            } catch (e) {
-                // ignore and fall back to build-time env
-            }
-            */
-
-            // Build-time env vars (required for static hosting)
-            applyConfig(ENV_EMAIL_FROM, ENV_EMAIL_REPLY_TO);
-        })();
-
-        return () => {
-            cancelled = true;
-        };
+        const nextFrom = (ENV_EMAIL_FROM && String(ENV_EMAIL_FROM).trim()) ? String(ENV_EMAIL_FROM).trim() : '';
+        const nextReplyTo = (ENV_EMAIL_REPLY_TO && String(ENV_EMAIL_REPLY_TO).trim()) ? String(ENV_EMAIL_REPLY_TO).trim() : '';
+        setSenderEmail(nextFrom);
+        setEmailReplyTo(nextReplyTo);
     }, [isEmailModalVisible, ENV_EMAIL_FROM, ENV_EMAIL_REPLY_TO]);
 
     const addToEmailPills = (raw) => {
@@ -1963,7 +1926,6 @@ function Checking() {
                 setTimeout(() => setSuccessMessage(''), 3000);
                 setSelectedEmails(new Set());
                 setEmailSubject('');
-                setEmailReplyTo(null);
                 setToEmailPills([]);
                 setToEmailDraft('');
                 setToEmailsError('');
@@ -2634,7 +2596,7 @@ function Checking() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>From Email</label>
                                 <input
-                                    value={senderEmail || 'Not configured'}
+                                    value={senderEmail}
                                     readOnly
                                     disabled
                                     style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', backgroundColor: '#f3f4f6' }}
@@ -2647,7 +2609,7 @@ function Checking() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Reply-To Email</label>
                                 <input
-                                    value={emailReplyTo ?? 'Not configured'}
+                                    value={emailReplyTo}
                                     readOnly
                                     disabled
                                     style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', backgroundColor: '#f3f4f6' }}
