@@ -2591,42 +2591,43 @@ function Checking() {
 
                         {/* Scrollable body (form fields) */}
                         <div style={{ padding: '14px 26px', overflowY: 'auto', flex: '1 1 auto' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
                                 <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>From Email</label>
                                 <input
                                     value={senderEmail}
                                     readOnly
                                     disabled
-                                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', backgroundColor: '#f3f4f6' }}
+                                    style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', borderRadius: '6px', border: '1px solid #ccc', backgroundColor: '#f3f4f6', fontSize: '0.9rem' }}
                                 />
                                 <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
                                     Configured by system (Pabbly SMTP)
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
                                 <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Reply-To Email</label>
                                 <input
                                     value={emailReplyTo}
                                     readOnly
                                     disabled
-                                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', backgroundColor: '#f3f4f6' }}
+                                    style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', borderRadius: '6px', border: '1px solid #ccc', backgroundColor: '#f3f4f6', fontSize: '0.9rem' }}
                                 />
                                 <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
                                     Configured by system (Pabbly SMTP)
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
                                 <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>To</label>
                                 <div
                                     style={{
-                                        padding: '8px',
+                                        width: '100%',
+                                        padding: '6px',
                                         borderRadius: '6px',
                                         border: '1px solid #ccc',
-                                        minHeight: '44px',
-                                        maxHeight: '140px',
+                                        minHeight: '40px',
+                                        maxHeight: '120px',
                                         display: 'flex',
                                         flexWrap: 'wrap',
                                         gap: '6px',
@@ -2648,16 +2649,16 @@ function Checking() {
                                                 display: 'inline-flex',
                                                 alignItems: 'center',
                                                 gap: '4px',
-                                                padding: '0px 6px',
+                                                padding: '1px 6px',
                                                 borderRadius: '999px',
                                                 backgroundColor: '#f3f4f6',
                                                 border: '1px solid #d1d5db',
                                                 fontSize: '0.74rem',
-                                                lineHeight: 1.1,
-                        
+                                                lineHeight: 1,
+                                                maxWidth: '100%',
                                             }}
                                         >
-                                            <span>{email}</span>
+                                            <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</span>
                                             <button
                                                 type="button"
                                                 aria-label={`Remove ${email}`}
@@ -2674,8 +2675,8 @@ function Checking() {
                                                     color: '#b91c1c',
                                                     fontWeight: 700,
                                                     lineHeight: 1,
-                                                    padding: '2px',
-                                                    fontSize: '0.85rem',
+                                                    padding: '0px 2px',
+                                                    fontSize: '0.8rem',
                                                 }}
                                             >
                                                 ✕
@@ -2710,12 +2711,12 @@ function Checking() {
                                         }}
                                         placeholder={toEmailPills.length === 0 ? 'Type an email, press Enter or comma' : ''}
                                         style={{
-                                            flex: '1 1 160px',
-                                            minWidth: '160px',
+                                            flex: '1 1 180px',
+                                            minWidth: '180px',
                                             border: 'none',
                                             outline: 'none',
                                             fontSize: '0.9rem',
-                                            padding: '4px 4px',
+                                            padding: '2px 4px',
                                         }}
                                     />
                                 </div>
@@ -2733,7 +2734,7 @@ function Checking() {
                                 placeholder="Subject"
                                 value={emailSubject}
                                 onChange={(e) => setEmailSubject(e.target.value)}
-                                style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                                style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '0.9rem' }}
                             />
 
                             <textarea
@@ -2741,7 +2742,7 @@ function Checking() {
                                 value={emailBody}
                                 onChange={(e) => setEmailBody(e.target.value)}
                                 rows={8}
-                                style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', overflowY: 'auto', resize: 'vertical', maxHeight: '260px' }}
+                                style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', borderRadius: '6px', border: '1px solid #ccc', overflowY: 'auto', resize: 'vertical', maxHeight: '260px', fontSize: '0.9rem' }}
                             />
 
                             {/* Attachments currently disabled (not required).
