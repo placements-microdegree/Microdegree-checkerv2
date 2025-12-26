@@ -778,7 +778,6 @@ function Checking() {
         async function checkSession() {
             const { data: { session } } = await supabase.auth.getSession();
             
-            console.log(session);
             if (!session) {
                 setIsAuthenticated(false);
             } else {
