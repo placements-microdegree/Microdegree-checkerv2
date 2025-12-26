@@ -2524,6 +2524,7 @@ function Checking() {
                                             <option value="">Select plan</option>
                                             <option value="Gold">Gold</option>
                                             <option value="Diamond">Diamond</option>
+                                            <option value="Gen AI">Gen AI</option>
                                             <option value="Diamond Plus">Diamond Plus</option>
                                             <option value="Platinum">Platinum</option>
                                             <option value="Titanium">Titanium</option>
