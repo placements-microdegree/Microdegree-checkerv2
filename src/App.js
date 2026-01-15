@@ -621,6 +621,8 @@ import Checking from './Checking';
 import ProtectedRoute from './ProtectedRoute';
 import './App.css';
 
+const AllStudents = React.lazy(() => import('./AllStudents'));
+
 function App() {
   return (
     
@@ -636,6 +638,16 @@ function App() {
           element={
             <ProtectedRoute>
               <Checking />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/students"
+          element={
+            <ProtectedRoute>
+              <React.Suspense fallback={<div>Loading…</div>}>
+                <AllStudents />
+              </React.Suspense>
             </ProtectedRoute>
           }
         />

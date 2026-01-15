@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient'; // Make sure this path is correct for your project
 
 // Import Font Awesome components
@@ -698,6 +699,7 @@ const modalContentStyle = {
 const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function Checking() {
+    const navigate = useNavigate();
     const PABBLY_WEBHOOK_URL = process.env.REACT_APP_PABBLY_WEBHOOK_URL;
     const ENV_EMAIL_FROM = process.env.REACT_APP_EMAIL_FROM;
     const ENV_EMAIL_REPLY_TO = process.env.REACT_APP_EMAIL_REPLY_TO;
@@ -1983,6 +1985,15 @@ function Checking() {
                     >
                         Search by Email
                     </button>
+
+                    <button
+                        type="button"
+                        onClick={() => navigate('/students')}
+                        style={inactiveButtonStyle}
+                    >
+                        Load All Students
+                    </button>
+
                     <button
                         onClick={() => setIsFormVisible(true)}
                         style={addStudentButtonStyle}
