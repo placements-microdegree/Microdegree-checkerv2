@@ -11,6 +11,7 @@ const supabase = createClient(
 const ALLOWED_EMAILS = new Set(
   [
     "microdegree.work@gmail.com",
+    "jobs.microdegree@gmail.com",
     "rakeshnk000@gmail.com",
     "brijesh@microdegree.work",
     "yashas@microdegree.work",
