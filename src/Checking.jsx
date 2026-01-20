@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient'; // Make sure this path is correct for your project
 
+import StudentFiltersPanel from './StudentFiltersPanel';
+
 // Import Font Awesome components
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy } from '@fortawesome/free-solid-svg-icons';
@@ -2093,158 +2095,19 @@ function Checking() {
                         }
                     }
                 >
-                    <div style={unifiedFilterPanelStyle}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={sidebarSectionHeaderStyle}>Filters</div>
-                            <button
-                                type="button"
-                                onClick={clearAllFilters}
-                                style={{
-                                    ...pillButtonBaseStyle,
-                                    fontSize: '0.8rem',
-                                    padding: '4px 10px',
-                                    opacity: (filterStatus !== 'All' || hasActiveJoiningFilters || hasActiveCourseFilters) ? 1 : 0.5,
-                                    cursor: (filterStatus !== 'All' || hasActiveJoiningFilters || hasActiveCourseFilters) ? 'pointer' : 'not-allowed',
-                                }}
-                                disabled={filterStatus === 'All' && !hasActiveJoiningFilters && !hasActiveCourseFilters}
-                            >
-                                Clear All
-                            </button>
-                        </div>
-
-                        <div style={filterGroupSectionStyle}>
-                            <div style={sidebarSectionHeaderStyle}>Status Filter</div>
-                            <div style={statusFilterRowStyle}>
-                                <div style={statusFilterButtonContainerStyle}>
-                                    <button
-                                        onClick={() => setFilterStatus('All')}
-                                        style={filterStatus === 'All' ? activeFilterAllStyle : inactiveFilterButtonStyle}
-                                    >
-                                        All
-                                    </button>
-                                    <button
-                                        onClick={() => setFilterStatus('Yes student found')}
-                                        style={filterStatus === 'Yes student found' ? activeFilterYesStyle : inactiveFilterButtonStyle}
-                                    >
-                                        Yes student found
-                                    </button>
-                                    <button
-                                        onClick={() => setFilterStatus('Not a student')}
-                                        style={filterStatus === 'Not a student' ? activeFilterNoStyle : inactiveFilterButtonStyle}
-                                    >
-                                        Not a student
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style={filterGroupSectionStyle}>
-                            <div style={sidebarSectionHeaderStyle}>Joining Date</div>
-                            <div style={dateFilterControlsStyle}>
-                                <div style={filterFieldStyle}>
-                                    <label style={filterFieldLabelStyle}>From</label>
-                                    <input
-                                        type="date"
-                                        value={joiningDateRange.from}
-                                        onChange={(e) => handleJoiningDateChange('from', e.target.value)}
-                                        style={dateFilterSelectStyle}
-                                    />
-                                </div>
-                                <div style={filterFieldStyle}>
-                                    <label style={filterFieldLabelStyle}>To</label>
-                                    <input
-                                        type="date"
-                                        value={joiningDateRange.to}
-                                        onChange={(e) => handleJoiningDateChange('to', e.target.value)}
-                                        style={dateFilterSelectStyle}
-                                    />
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={resetJoiningDateFilters}
-                                    style={{
-                                        ...pillButtonBaseStyle,
-                                        fontSize: '0.8rem',
-                                        padding: '4px 10px',
-                                        whiteSpace: 'nowrap',
-                                        marginTop: '18px',
-                                    }}
-                                    disabled={!hasActiveJoiningFilters}
-                                >
-                                    Clear Date Filter
-                                </button>
-                            </div>
-                        </div>
-
-                        <div style={courseFilterFieldsWrapperStyle}>
-                            <div style={filterFieldStyle}>
-                                <label style={filterFieldLabelStyle}>Course Plan</label>
-                                <div style={pillRowStyle}>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleCoursePillClick('coursePlan', null)}
-                                        style={(!courseFilters.coursePlan || courseFilters.coursePlan.length === 0) ? pillButtonSelectedStyle : pillButtonBaseStyle}
-                                    >
-                                        Any
-                                    </button>
-                                    {courseFilterOptions.plans.map((plan) => (
-                                        <button
-                                            key={plan}
-                                            type="button"
-                                            onClick={() => handleCoursePillClick('coursePlan', plan)}
-                                            style={courseFilters.coursePlan && courseFilters.coursePlan.includes(plan) ? pillButtonSelectedStyle : pillButtonBaseStyle}
-                                        >
-                                            {plan}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div style={filterFieldStyle}>
-                                <label style={filterFieldLabelStyle}>Location</label>
-                                <div style={pillRowStyle}>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleCoursePillClick('location', null)}
-                                        style={(!courseFilters.location || courseFilters.location.length === 0) ? pillButtonSelectedStyle : pillButtonBaseStyle}
-                                    >
-                                        Any
-                                    </button>
-                                    {courseFilterOptions.locations.map((loc) => (
-                                        <button
-                                            key={loc}
-                                            type="button"
-                                            onClick={() => handleCoursePillClick('location', loc)}
-                                            style={courseFilters.location && courseFilters.location.includes(loc) ? pillButtonSelectedStyle : pillButtonBaseStyle}
-                                        >
-                                            {loc}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div style={filterFieldStyle}>
-                                <label style={filterFieldLabelStyle}>Delivery Mode</label>
-                                <div style={pillRowStyle}>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleCoursePillClick('courseType1', null)}
-                                        style={(!courseFilters.courseType1 || courseFilters.courseType1.length === 0) ? pillButtonSelectedStyle : pillButtonBaseStyle}
-                                    >
-                                        Any
-                                    </button>
-                                    {courseFilterOptions.courseType1Values.map((value) => (
-                                        <button
-                                            key={value}
-                                            type="button"
-                                            onClick={() => handleCoursePillClick('courseType1', value)}
-                                            style={courseFilters.courseType1 && courseFilters.courseType1.includes(value) ? pillButtonSelectedStyle : pillButtonBaseStyle}
-                                        >
-                                            {value}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <StudentFiltersPanel
+                        filterStatus={filterStatus}
+                        setFilterStatus={setFilterStatus}
+                        joiningDateRange={joiningDateRange}
+                        handleJoiningDateChange={handleJoiningDateChange}
+                        resetJoiningDateFilters={resetJoiningDateFilters}
+                        hasActiveJoiningFilters={hasActiveJoiningFilters}
+                        courseFilters={courseFilters}
+                        courseFilterOptions={courseFilterOptions}
+                        handleCoursePillClick={handleCoursePillClick}
+                        hasActiveCourseFilters={hasActiveCourseFilters}
+                        clearAllFilters={clearAllFilters}
+                    />
                 </div>
 
                 <div className="table-column" style={resultsPanelWrapperStyle}>
