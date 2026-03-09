@@ -2146,6 +2146,12 @@ function Checking() {
                                 <tbody>
                                     {filteredResults.map((item, index) => {
                                         const sessionMeta = computeSessionMeta(item);
+                                        const showEmailInCoursePlan = Boolean(
+                                            item.foundEmail && !['N/A', 'Error', 'Not Found'].includes(String(item.foundEmail))
+                                        );
+                                        const showPhoneInCoursePlan = Boolean(
+                                            item.foundPhone && !['N/A', 'Error', 'Not Found'].includes(String(item.foundPhone))
+                                        );
                                         return (
                                         <tr key={item.id || index} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#fbfbfb' }}>
                                             <td style={tdStyle}>
@@ -2177,7 +2183,17 @@ function Checking() {
                                             <td style={tdStyle}>{item.courseFees}</td>
                                             <td style={tdStyle}>{item.courseType || 'N/A'}</td>
                                             <td style={tdStyle}>{item.courseType1 || 'N/A'}</td>
-                                            <td style={tdStyle}>{item.coursePlan || 'N/A'}</td>
+                                            <td style={{ ...tdStyle, whiteSpace: 'normal' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    <div>{item.coursePlan || 'N/A'}</div>
+                                                    {(showEmailInCoursePlan || showPhoneInCoursePlan) && (
+                                                        <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, lineHeight: 1.2 }}>
+                                                            {showEmailInCoursePlan && <div>Email: {item.foundEmail}</div>}
+                                                            {showPhoneInCoursePlan && <div>Phone: {item.foundPhone}</div>}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td style={tdStyle}>{item.location || 'N/A'}</td>
                                             <td style={tdStyle}>{item.joiningDateDisplay || 'N/A'}</td>
                                             <td style={{ ...tdStyle, fontWeight: 'bold', color: sessionMeta.color }}>{sessionMeta.label}</td>
@@ -2402,6 +2418,7 @@ function Checking() {
                                             <option value="Diamond Plus">Diamond Plus</option>
                                             <option value="Platinum">Platinum</option>
                                             <option value="Titanium">Titanium</option>
+                                            <option value="Titanium Pro">Titanium Pro</option>
                                             <option value="Titanium Plus">Titanium Plus</option>
                                         </select>
                                     </div>
