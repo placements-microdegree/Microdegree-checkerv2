@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabaseClient"; // Make sure this path is correct for your project
+import * as XLSX from "xlsx";
 
 import StudentFiltersPanel from "./StudentFiltersPanel";
 
@@ -9,6 +10,137 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy } from "@fortawesome/free-solid-svg-icons";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Maps the normalized (lowercased, alphanumeric-only) bulk-upload Excel
+// column headers to the `students_enrolled_all` payload keys used by the
+// single-student form.
+const BULK_COLUMN_MAP = {
+  firstname: { key: "first_name", label: "First Name" },
+  lastname: { key: "last_name", label: "Last Name" },
+  email: { key: "email", label: "Email" },
+  altemail: { key: "alternate_email", label: "Alt Email" },
+  phone: { key: "phone", label: "Phone" },
+  altphone: { key: "alternate_phone", label: "Alt Phone" },
+  coursefee: { key: "course_fee", label: "Course Fee" },
+  location: { key: "location", label: "Location" },
+  salesagent: { key: "sales_agent", label: "Sales Agent" },
+  course: { key: "course_type", label: "Course" },
+  dateofjoin: { key: "date", label: "Date of Join" },
+  courseplan: { key: "course_plan", label: "Course Plan" },
+  coursetaken: { key: "courses_taken", label: "Course Taken" },
+  coursetype: { key: "course_type_1", label: "Course Type" },
+};
+
+const BULK_MONTH_NAMES = {
+  jan: 1,
+  feb: 2,
+  mar: 3,
+  apr: 4,
+  may: 5,
+  jun: 6,
+  jul: 7,
+  aug: 8,
+  sep: 9,
+  oct: 10,
+  nov: 11,
+  dec: 12,
+};
+
+const normalizeHeaderKey = (header) =>
+  String(header ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+const bulkPad2 = (n) => String(n).padStart(2, "0");
+
+// Converts an Excel serial date number (days since 1899-12-30) to an ISO
+// yyyy-mm-dd string, using UTC getters so no timezone shift is introduced.
+const excelSerialToIsoDate = (serial) => {
+  const utcDays = Math.floor(serial - 25569);
+  const date = new Date(utcDays * 86400 * 1000);
+  return `${date.getUTCFullYear()}-${bulkPad2(date.getUTCMonth() + 1)}-${bulkPad2(
+    date.getUTCDate(),
+  )}`;
+};
+
+// Users paste "Date of Join" values from all kinds of sources (different
+// locales, Excel auto-formatting, plain text), so this normalizes whatever
+// comes in to the ISO yyyy-mm-dd format the `date` column expects.
+// When a numeric day/month pair is ambiguous (both <= 12) it assumes
+// dd/mm/yyyy, matching the convention this team pastes dates in.
+const parseBulkDate = (raw) => {
+  if (raw === null || raw === undefined) return { value: null, error: null };
+
+  if (raw instanceof Date && !isNaN(raw.getTime())) {
+    return {
+      value: `${raw.getFullYear()}-${bulkPad2(raw.getMonth() + 1)}-${bulkPad2(raw.getDate())}`,
+      error: null,
+    };
+  }
+
+  if (typeof raw === "number") {
+    return { value: excelSerialToIsoDate(raw), error: null };
+  }
+
+  const str = String(raw).trim();
+  if (!str) return { value: null, error: null };
+
+  // yyyy-mm-dd / yyyy/mm/dd
+  let m = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (m) {
+    const [, y, mo, d] = m;
+    return { value: `${y}-${bulkPad2(mo)}-${bulkPad2(d)}`, error: null };
+  }
+
+  // d/m/y, d-m-y or d.m.y (2 or 4 digit year)
+  m = str.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
+  if (m) {
+    let [, a, b, y] = m;
+    a = Number(a);
+    b = Number(b);
+    let year = Number(y);
+    if (year < 100) year += year < 50 ? 2000 : 1900;
+    let day;
+    let month;
+    if (a > 12 && b <= 12) {
+      day = a;
+      month = b;
+    } else if (b > 12 && a <= 12) {
+      day = b;
+      month = a;
+    } else {
+      day = a;
+      month = b; // ambiguous: assume dd/mm/yyyy
+    }
+    if (month < 1 || month > 12 || day < 1 || day > 31) {
+      return { value: null, error: `Unrecognized date "${str}"` };
+    }
+    return { value: `${year}-${bulkPad2(month)}-${bulkPad2(day)}`, error: null };
+  }
+
+  // "22 Jul 2026" / "22-Jul-2026"
+  m = str.match(/^(\d{1,2})[\s-]+([A-Za-z]{3,})[\s,-]+(\d{4})$/);
+  if (m) {
+    const [, d, monStr, y] = m;
+    const mon = BULK_MONTH_NAMES[monStr.slice(0, 3).toLowerCase()];
+    if (mon) {
+      return { value: `${y}-${bulkPad2(mon)}-${bulkPad2(d)}`, error: null };
+    }
+  }
+
+  // "Jul 22 2026" / "Jul 22, 2026" / "July 22, 2026"
+  m = str.match(/^([A-Za-z]{3,})[\s.]+(\d{1,2}),?\s+(\d{4})$/);
+  if (m) {
+    const [, monStr, d, y] = m;
+    const mon = BULK_MONTH_NAMES[monStr.slice(0, 3).toLowerCase()];
+    if (mon) {
+      return { value: `${y}-${bulkPad2(mon)}-${bulkPad2(d)}`, error: null };
+    }
+  }
+
+  return { value: null, error: `Unrecognized date format "${str}"` };
+};
 
 // Inline styles
 const containerStyle = {
@@ -757,6 +889,16 @@ function Checking() {
   const [formStatus, setFormStatus] = useState({ type: "", message: "" });
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [isFormVisible, setIsFormVisible] = useState(false);
+
+  // Bulk (Excel) student upload state
+  const [isBulkModalVisible, setIsBulkModalVisible] = useState(false);
+  const [bulkFileName, setBulkFileName] = useState("");
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [bulkFileError, setBulkFileError] = useState("");
+  const [bulkRows, setBulkRows] = useState([]); // [{ rowNumber, payload, errors: [] }]
+  const [isBulkUploading, setIsBulkUploading] = useState(false);
+  const [bulkUploadStatus, setBulkUploadStatus] = useState({ type: "", message: "" });
+  const bulkFileInputRef = useRef(null);
   // Email selection + sending state
   const [selectedEmails, setSelectedEmails] = useState(new Set());
   const [emailSubject, setEmailSubject] = useState("");
@@ -954,10 +1096,19 @@ function Checking() {
       .trim()
       .toLowerCase();
     const searchedKey = buildSearchedValueKey(type, item?.value);
-    const emailKey = normalizeEmailKey(item?.foundEmail);
+    // Prefer the actual DB row id so two distinct enrollment records that
+    // happen to share an email/phone (e.g. a student enrolled in two
+    // courses) are never collapsed into one result.
+    const recordKey =
+      item?.recordId !== undefined &&
+      item?.recordId !== null &&
+      item?.recordId !== ""
+        ? `id:${item.recordId}`
+        : normalizeEmailKey(item?.foundEmail) ||
+          buildPhoneKey(item?.foundPhone) ||
+          "no-contact";
     const phoneKey = buildPhoneKey(item?.foundPhone);
-    const contactKey = emailKey || phoneKey || "no-contact";
-    return `${statusKey}::${searchedKey}::${contactKey}`;
+    return `${statusKey}::${searchedKey}::${recordKey}::${phoneKey}`;
   };
 
   // Lightweight CSV row parser that respects quoted values and double-quotes
@@ -1285,11 +1436,155 @@ function Checking() {
     setIsFormSubmitting(false);
   };
 
+  // Applies the same required/format rules as the single-student form
+  // (validateForm above) to one parsed bulk-upload row.
+  const validateBulkPayload = (payload, dateError) => {
+    const errors = [];
+    if (!payload.first_name) errors.push("First Name is required");
+    if (!payload.email) {
+      errors.push("Email is required");
+    } else if (!EMAIL_RE.test(payload.email)) {
+      errors.push("Email is invalid");
+    }
+    if (!payload.phone) {
+      errors.push("Phone is required");
+    } else if (!isValidPhoneSearchValue(payload.phone)) {
+      errors.push("Phone must have at least 10 digits");
+    }
+    if (payload.alternate_email && !EMAIL_RE.test(payload.alternate_email)) {
+      errors.push("Alt Email is invalid");
+    }
+    if (
+      payload.alternate_phone &&
+      !isValidPhoneSearchValue(payload.alternate_phone)
+    ) {
+      errors.push("Alt Phone must have at least 10 digits");
+    }
+    if (
+      payload.course_fee !== null &&
+      payload.course_fee !== undefined &&
+      isNaN(Number(payload.course_fee))
+    ) {
+      errors.push("Course Fee must be a number");
+    }
+    if (dateError) {
+      errors.push(dateError);
+    }
+    return errors;
+  };
+
+  const resetBulkModalState = () => {
+    setBulkFileName("");
+    setBulkFileError("");
+    setBulkRows([]);
+    setBulkUploadStatus({ type: "", message: "" });
+    if (bulkFileInputRef.current) {
+      bulkFileInputRef.current.value = "";
+    }
+  };
+
+  const handleBulkFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setBulkFileName(file.name);
+    setBulkFileError("");
+    setBulkRows([]);
+    setBulkUploadStatus({ type: "", message: "" });
+    setIsBulkProcessing(true);
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: "array", cellDates: true });
+      const firstSheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[firstSheetName];
+      const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: true });
+
+      if (rawRows.length === 0) {
+        setBulkFileError(
+          "No data rows found in the file. Make sure you filled rows below the header row.",
+        );
+        setIsBulkProcessing(false);
+        return;
+      }
+
+      const parsedRows = rawRows.map((rawRow, index) => {
+        const payload = {};
+        Object.entries(rawRow).forEach(([header, rawValue]) => {
+          const mapping = BULK_COLUMN_MAP[normalizeHeaderKey(header)];
+          if (!mapping) return; // ignore unrecognized/extra columns
+
+          if (mapping.key === "date") {
+            const { value, error } = parseBulkDate(rawValue);
+            payload._dateError = error || undefined;
+            payload.date = value;
+            return;
+          }
+
+          const strValue = String(rawValue ?? "").trim();
+          if (mapping.key === "course_fee") {
+            payload.course_fee = strValue ? Number(strValue) : null;
+          } else {
+            payload[mapping.key] = strValue || null;
+          }
+        });
+
+        const dateError = payload._dateError;
+        delete payload._dateError;
+
+        const errors = validateBulkPayload(payload, dateError);
+        return { rowNumber: index + 2, payload, errors }; // +2: header row + 1-based index
+      });
+
+      setBulkRows(parsedRows);
+    } catch (err) {
+      console.error("Failed to parse bulk upload file:", err);
+      setBulkFileError(
+        "Could not read that file. Please make sure it's a valid .xlsx or .xls file based on the template.",
+      );
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkUpload = async () => {
+    const hasErrors = bulkRows.some((row) => row.errors.length > 0);
+    if (bulkRows.length === 0 || hasErrors) return;
+
+    setIsBulkUploading(true);
+    setBulkUploadStatus({ type: "", message: "" });
+
+    const payloads = bulkRows.map((row) => row.payload);
+    const { error } = await supabase
+      .from("students_enrolled_all")
+      .insert(payloads);
+
+    if (error) {
+      console.error("Failed to bulk insert students:", error);
+      setBulkUploadStatus({
+        type: "error",
+        message: `Unable to save students: ${error.message}`,
+      });
+    } else {
+      setBulkUploadStatus({
+        type: "success",
+        message: `${payloads.length} student${payloads.length === 1 ? "" : "s"} saved successfully.`,
+      });
+      setBulkRows([]);
+      setBulkFileName("");
+      if (bulkFileInputRef.current) {
+        bulkFileInputRef.current.value = "";
+      }
+    }
+
+    setIsBulkUploading(false);
+  };
+
   const performSingleSearch = async (value, type) => {
     let query = supabase
       .from("students_enrolled_all")
       .select(
-        "first_name, last_name, course_fee, course_type, course_type_1, course_plan, location, date, email, alternate_email, phone, alternate_phone",
+        "id, first_name, last_name, course_fee, course_type, course_type_1, course_plan, location, date, email, alternate_email, phone, alternate_phone",
       );
 
     if (type === "email") {
@@ -1448,6 +1743,7 @@ function Checking() {
               const joiningDateMeta = buildJoiningDateMeta(foundItem.date);
               const baseResult = {
                 value: value,
+                recordId: foundItem.id,
                 fullName: fullName || "N/A",
                 courseFees: courseFees,
                 microdegreeStudentStatus: "Yes student found",
@@ -1465,12 +1761,18 @@ function Checking() {
                 foundItem.phone,
                 foundItem.alternate_phone,
               );
+              // Prefer the row's actual id so two distinct enrollment
+              // records for the same person (same email/name) aren't
+              // treated as duplicates of each other.
               const identifierParts = [
                 (primaryEmail || "").toLowerCase(),
                 (foundItem.first_name || "").toLowerCase(),
                 (foundItem.last_name || "").toLowerCase(),
               ];
-              const studentIdentifier = identifierParts.join("::") || "student";
+              const studentIdentifier =
+                foundItem.id !== undefined && foundItem.id !== null
+                  ? `id:${foundItem.id}`
+                  : identifierParts.join("::") || "student";
 
               if (uniquePhones.length === 0) {
                 const dedupKey = `${studentIdentifier}::no-phone`;
@@ -1478,7 +1780,11 @@ function Checking() {
                   seenPhoneEntries.add(dedupKey);
                   allProcessedResults.push({
                     ...baseResult,
-                    id: createResultId(type, value, "no-phone"),
+                    id: createResultId(
+                      type,
+                      value,
+                      `${foundItem.id ?? "row"}-no-phone`,
+                    ),
                     foundPhone: "N/A",
                   });
                 }
@@ -1492,7 +1798,11 @@ function Checking() {
                   seenPhoneEntries.add(dedupKey);
                   allProcessedResults.push({
                     ...baseResult,
-                    id: createResultId(type, value, phoneKey || "phone"),
+                    id: createResultId(
+                      type,
+                      value,
+                      `${foundItem.id ?? "row"}-${phoneKey || "phone"}`,
+                    ),
                     foundPhone: phoneNumber,
                   });
                 }
@@ -1608,6 +1918,7 @@ function Checking() {
               const joiningDateMeta = buildJoiningDateMeta(foundItem.date);
               const baseResult = {
                 value,
+                recordId: foundItem.id,
                 fullName: fullName || "N/A",
                 courseFees,
                 microdegreeStudentStatus: "Yes student found",
@@ -1629,7 +1940,11 @@ function Checking() {
               if (uniquePhones.length === 0) {
                 allEmailResults.push({
                   ...baseResult,
-                  id: createResultId(type, value, "no-phone"),
+                  id: createResultId(
+                    type,
+                    value,
+                    `${foundItem.id ?? "row"}-no-phone`,
+                  ),
                   foundPhone: "N/A",
                 });
                 return;
@@ -1639,7 +1954,11 @@ function Checking() {
                 const phoneKey = buildPhoneKey(phoneNumber);
                 allEmailResults.push({
                   ...baseResult,
-                  id: createResultId(type, value, phoneKey || "phone"),
+                  id: createResultId(
+                    type,
+                    value,
+                    `${foundItem.id ?? "row"}-${phoneKey || "phone"}`,
+                  ),
                   foundPhone: phoneNumber,
                 });
               });
@@ -2164,6 +2483,16 @@ function Checking() {
             style={addStudentButtonStyle}
           >
             Add Student Details
+          </button>
+
+          <button
+            onClick={() => {
+              resetBulkModalState();
+              setIsBulkModalVisible(true);
+            }}
+            style={addStudentButtonStyle}
+          >
+            Add Students in Bulk
           </button>
         </div>
 
@@ -2766,6 +3095,254 @@ function Checking() {
                 </div>
               )}
             </form>
+          </div>
+        </div>
+      )}
+
+      {isBulkModalVisible && (
+        <div style={modalOverlayStyle}>
+          <div
+            style={{
+              ...formSectionStyle,
+              maxWidth: "1000px",
+              maxHeight: "90vh",
+              overflowY: "auto",
+            }}
+          >
+            <div style={formModalHeaderStyle}>
+              <h3 style={formModalTitleStyle}>Add Students in Bulk</h3>
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={() => setIsBulkModalVisible(false)}
+                style={formModalCloseButtonStyle}
+              >
+                ×
+              </button>
+            </div>
+
+            <div
+              style={{
+                margin: "0 0 12px 0",
+                color: "#64748b",
+                fontSize: "13px",
+              }}
+            >
+              Upload an Excel file with student details. Only First Name,
+              Email and Phone are mandatory — every other column can be left
+              blank. If any row has a problem, fix it in the file and
+              re-upload before anything is saved.
+            </div>
+
+            <a
+              href="/AddStudentTemplate.xlsx"
+              download
+              style={{
+                display: "inline-block",
+                marginBottom: "12px",
+                padding: "7px 12px",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#0f172a",
+                backgroundColor: "#eef3fb",
+                border: "1px solid #dbe6f6",
+                borderRadius: "8px",
+                textDecoration: "none",
+              }}
+            >
+              ⬇ Download Template
+            </a>
+
+            <div>
+              <input
+                ref={bulkFileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleBulkFileChange}
+                disabled={isBulkProcessing || isBulkUploading}
+              />
+            </div>
+
+            {bulkFileName && (
+              <div
+                style={{ fontSize: "13px", color: "#334155", marginTop: "8px" }}
+              >
+                {bulkFileName}
+              </div>
+            )}
+
+            {isBulkProcessing && (
+              <div
+                style={{
+                  fontStyle: "italic",
+                  color: "#6c757d",
+                  marginTop: "8px",
+                  fontSize: "13px",
+                }}
+              >
+                Reading file…
+              </div>
+            )}
+
+            {bulkFileError && (
+              <div
+                style={{ ...errorTextStyle, marginTop: "8px", fontSize: "13px" }}
+              >
+                {bulkFileError}
+              </div>
+            )}
+
+            {bulkRows.length > 0 &&
+              (() => {
+                const errorRows = bulkRows.filter(
+                  (row) => row.errors.length > 0,
+                );
+                return (
+                  <div style={{ marginTop: "14px" }}>
+                    {errorRows.length > 0 ? (
+                      <div
+                        style={{
+                          background: "#fef2f2",
+                          border: "1px solid #fecaca",
+                          borderRadius: "8px",
+                          padding: "12px",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            color: "#b91c1c",
+                            marginBottom: "6px",
+                            fontSize: "13px",
+                          }}
+                        >
+                          {errorRows.length} row
+                          {errorRows.length === 1 ? "" : "s"} need fixing
+                          before you can upload. Correct them in the Excel
+                          file and re-upload.
+                        </div>
+                        <ul
+                          style={{
+                            margin: 0,
+                            paddingLeft: "18px",
+                            fontSize: "13px",
+                            color: "#b91c1c",
+                          }}
+                        >
+                          {errorRows.map((row) => (
+                            <li key={row.rowNumber}>
+                              Row {row.rowNumber}: {row.errors.join("; ")}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          background: "#f0fdf4",
+                          border: "1px solid #bbf7d0",
+                          borderRadius: "8px",
+                          padding: "10px 12px",
+                          marginBottom: "12px",
+                          color: "#15803d",
+                          fontWeight: 600,
+                          fontSize: "13px",
+                        }}
+                      >
+                        All {bulkRows.length} row
+                        {bulkRows.length === 1 ? "" : "s"} look good. Review
+                        below, then click Upload.
+                      </div>
+                    )}
+
+                    <div
+                      style={{
+                        overflowX: "auto",
+                        maxHeight: "320px",
+                        overflowY: "auto",
+                        border: "1px solid #eef3fb",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      <table style={{ ...tableStyle, fontSize: "12px" }}>
+                        <thead>
+                          <tr>
+                            <th style={thStyle}>Row</th>
+                            <th style={thStyle}>First Name</th>
+                            <th style={thStyle}>Last Name</th>
+                            <th style={thStyle}>Email</th>
+                            <th style={thStyle}>Phone</th>
+                            <th style={thStyle}>Course Fee</th>
+                            <th style={thStyle}>Date of Join</th>
+                            <th style={thStyle}>Course Plan</th>
+                            <th style={thStyle}>Errors</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bulkRows.map((row) => (
+                            <tr
+                              key={row.rowNumber}
+                              style={
+                                row.errors.length > 0
+                                  ? { backgroundColor: "#fef2f2" }
+                                  : undefined
+                              }
+                            >
+                              <td style={tdStyle}>{row.rowNumber}</td>
+                              <td style={tdStyle}>
+                                {row.payload.first_name || "—"}
+                              </td>
+                              <td style={tdStyle}>
+                                {row.payload.last_name || "—"}
+                              </td>
+                              <td style={tdStyle}>{row.payload.email || "—"}</td>
+                              <td style={tdStyle}>{row.payload.phone || "—"}</td>
+                              <td style={tdStyle}>
+                                {row.payload.course_fee ?? "—"}
+                              </td>
+                              <td style={tdStyle}>{row.payload.date || "—"}</td>
+                              <td style={tdStyle}>
+                                {row.payload.course_plan || "—"}
+                              </td>
+                              <td style={{ ...tdStyle, color: "#dc3545" }}>
+                                {row.errors.join("; ")}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleBulkUpload}
+                      disabled={isBulkUploading || errorRows.length > 0}
+                      style={{ ...formSubmitButtonStyle, marginTop: "14px" }}
+                    >
+                      {isBulkUploading
+                        ? "Uploading…"
+                        : `Upload ${bulkRows.length} Student${
+                            bulkRows.length === 1 ? "" : "s"
+                          }`}
+                    </button>
+                  </div>
+                );
+              })()}
+
+            {bulkUploadStatus.message && (
+              <div
+                style={{
+                  ...formStatusStyle,
+                  color:
+                    bulkUploadStatus.type === "success"
+                      ? "#28a745"
+                      : "#dc3545",
+                }}
+              >
+                {bulkUploadStatus.message}
+              </div>
+            )}
           </div>
         </div>
       )}
