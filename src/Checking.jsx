@@ -208,9 +208,9 @@ const baseButtonStyle = {
 
 const activeButtonStyle = {
   ...baseButtonStyle,
-  backgroundColor: "#2563eb",
+  backgroundColor: "#4F46E5",
   color: "white",
-  borderColor: "#1e40af",
+  borderColor: "#4338CA",
 };
 
 const inactiveButtonStyle = {
@@ -265,47 +265,6 @@ const sidebarContainerStyle = {
   transition: "all 0.25s ease",
 };
 
-/* eslint-disable no-unused-vars */
-const sidebarSectionStyle = {
-  backgroundColor: "white",
-  borderRadius: "10px",
-  padding: "16px",
-  boxShadow: "0 1px 5px rgba(0,0,0,0.05)",
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px",
-};
-
-const sidebarSectionHeaderStyle = {
-  fontWeight: 700,
-  fontSize: "1rem",
-  color: "#0f172a",
-};
-
-const unifiedFilterPanelStyle = {
-  backgroundColor: "white",
-  borderRadius: "12px",
-  padding: "18px",
-  boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
-  display: "flex",
-  flexDirection: "column",
-  gap: "18px",
-};
-
-const filterGroupSectionStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px",
-  borderBottom: "1px solid #f1f5f9",
-  paddingBottom: "14px",
-};
-
-const courseFilterFieldsWrapperStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "14px",
-};
-
 const resultsPanelWrapperStyle = {
   flex: 1,
   minWidth: 0,
@@ -342,14 +301,6 @@ const emptyResultsStyle = {
   fontWeight: 600,
 };
 
-const statusFilterRowStyle = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: "12px",
-  flexWrap: "wrap",
-};
-
 const statusSummaryInlineStyle = {
   fontSize: "0.85rem",
   color: "#64748b",
@@ -369,10 +320,12 @@ const filterToggleSummaryCenterStyle = {
 };
 
 const thStyle = {
-  padding: "12px",
-  border: "1px solid #ddd",
-  backgroundColor: "#f2f2f2",
-  fontWeight: "bold",
+  padding: "10px 12px",
+  borderBottom: "1px solid #e2e8f0",
+  backgroundColor: "#f8fafc",
+  fontWeight: 700,
+  fontSize: "13px",
+  color: "#0f172a",
   whiteSpace: "nowrap",
   position: "sticky",
   top: 0,
@@ -380,267 +333,13 @@ const thStyle = {
 };
 
 const tdStyle = {
-  padding: "12px",
-  border: "1px solid #ddd",
+  padding: "10px 12px",
+  borderBottom: "1px solid #f1f5f9",
   whiteSpace: "nowrap",
   verticalAlign: "middle",
+  fontSize: "13px",
+  color: "#0f172a",
 };
-
-const filterButtonContainerStyle = {
-  marginBottom: "15px",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  gap: "10px",
-  flexWrap: "wrap",
-  padding: "10px 0",
-  borderTop: "1px solid #eee",
-  borderBottom: "1px solid #eee",
-  backgroundColor: "white",
-  borderRadius: "8px",
-  boxShadow: "0 1px 5px rgba(0,0,0,0.05)",
-};
-
-const statusFilterButtonContainerStyle = {
-  ...filterButtonContainerStyle,
-  justifyContent: "flex-start",
-  marginBottom: 0,
-  padding: 0,
-  border: "none",
-  boxShadow: "none",
-};
-
-const filterLabelStyle = {
-  fontWeight: "bold",
-  color: "#555",
-  marginRight: "5px",
-};
-
-const baseFilterButtonStyle = {
-  padding: "8px 15px",
-  border: "1px solid",
-  borderRadius: "4px",
-  cursor: "pointer",
-  fontSize: "15px",
-  fontWeight: "bold",
-  transition:
-    "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease",
-};
-
-const activeFilterAllStyle = {
-  ...baseFilterButtonStyle,
-  backgroundColor: "#6c757d",
-  color: "white",
-  borderColor: "#6c757d",
-};
-
-const activeFilterYesStyle = {
-  ...baseFilterButtonStyle,
-  backgroundColor: "#28a745",
-  color: "white",
-  borderColor: "#28a745",
-};
-
-const activeFilterNoStyle = {
-  ...baseFilterButtonStyle,
-  backgroundColor: "#dc3545",
-  color: "white",
-  borderColor: "#dc3545",
-};
-
-const inactiveFilterButtonStyle = {
-  ...baseButtonStyle,
-  backgroundColor: "#f8f9fa",
-  color: "#333",
-  borderColor: "#ced4da",
-};
-
-const pillButtonBaseStyle = {
-  padding: "6px 12px",
-  borderRadius: "999px",
-  border: "1px solid #2563eb",
-  backgroundColor: "#ffffff",
-  color: "#2563eb",
-  fontSize: "0.85rem",
-  fontWeight: 500,
-  cursor: "pointer",
-  transition:
-    "background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease",
-};
-
-const pillButtonSelectedStyle = {
-  ...pillButtonBaseStyle,
-  backgroundColor: "#2563eb",
-  color: "#ffffff",
-};
-
-const pillRowStyle = {
-  display: "flex",
-  flexWrap: "wrap",
-  gap: "8px",
-};
-
-const dateFilterWrapperStyle = {
-  marginTop: "10px",
-  backgroundColor: "white",
-  borderRadius: "10px",
-  padding: "14px 18px",
-  boxShadow: "0 1px 5px rgba(0,0,0,0.05)",
-  display: "flex",
-  flexDirection: "column",
-  gap: "8px",
-};
-
-const dateFilterHeaderStyle = {
-  fontWeight: 700,
-  fontSize: "0.95rem",
-  color: "#1f2937",
-};
-
-const dateFilterControlsStyle = {
-  display: "flex",
-  flexWrap: "wrap",
-  gap: "10px",
-  alignItems: "center",
-};
-
-const dateFilterSelectStyle = {
-  minWidth: "110px",
-  padding: "8px 10px",
-  borderRadius: "6px",
-  border: "1px solid #dbe6ff",
-  backgroundColor: "#f9fbff",
-  fontSize: "0.95rem",
-};
-
-const dateFilterResetButtonStyle = {
-  ...baseButtonStyle,
-  backgroundColor: "#fef2f2",
-  color: "#b91c1c",
-  borderColor: "#fecaca",
-};
-
-const filterMenuContainerStyle = {
-  marginTop: "12px",
-  backgroundColor: "white",
-  borderRadius: "12px",
-  padding: "16px",
-  boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
-  display: "flex",
-  flexDirection: "column",
-  gap: "14px",
-};
-
-const filterMenuHeaderStyle = {
-  fontWeight: 700,
-  fontSize: "1rem",
-  color: "#111827",
-};
-
-const filterSectionsWrapperStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "18px",
-};
-
-const filterSectionStyle = {
-  border: "1px solid #e5e7eb",
-  borderRadius: "10px",
-  padding: "12px 14px",
-  backgroundColor: "#f9fafb",
-};
-
-const filterSectionHeaderStyle = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: "10px",
-  fontWeight: 600,
-  color: "#1f2937",
-};
-
-const filterFieldGroupStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-  gap: "12px",
-};
-
-const filterFieldStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "6px",
-};
-
-const filterFieldLabelStyle = {
-  fontSize: "0.85rem",
-  fontWeight: 600,
-  color: "#374151",
-};
-
-const filterToggleRowStyle = {
-  display: "flex",
-  flexWrap: "wrap",
-  gap: "10px",
-};
-
-const filterToggleButtonStyle = {
-  ...baseButtonStyle,
-  backgroundColor: "#f5f7ff",
-  color: "#1d4ed8",
-  borderColor: "#bfdbfe",
-};
-
-const filterToggleButtonActiveStyle = {
-  ...filterToggleButtonStyle,
-  backgroundColor: "#1d4ed8",
-  color: "#fff",
-  borderColor: "#1e40af",
-};
-
-const filterSubMenuStyle = {
-  marginTop: "12px",
-  border: "1px solid #e0e7ff",
-  borderRadius: "12px",
-  backgroundColor: "#f8fafc",
-  padding: "14px",
-  display: "flex",
-  flexDirection: "column",
-  gap: "10px",
-};
-
-const filterSubGroupStyle = {
-  border: "1px solid #e5e7eb",
-  borderRadius: "10px",
-  backgroundColor: "#fff",
-  overflow: "hidden",
-};
-
-const filterSubGroupButtonStyle = {
-  width: "100%",
-  textAlign: "left",
-  backgroundColor: "#fff",
-  border: "none",
-  padding: "10px 12px",
-  fontWeight: 600,
-  fontSize: "0.95rem",
-  color: "#111827",
-  cursor: "pointer",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-};
-
-const filterSubGroupContentStyle = {
-  padding: "10px 12px 14px 12px",
-  borderTop: "1px solid #f1f5f9",
-};
-
-const filterSubResetRowStyle = {
-  display: "flex",
-  justifyContent: "flex-end",
-  marginTop: "4px",
-};
-/* eslint-enable no-unused-vars */
 
 const copyButtonStyle = {
   marginLeft: "8px",
@@ -654,7 +353,7 @@ const copyButtonStyle = {
 const copiedMessageStyle = {
   fontSize: "0.8em",
   marginLeft: "5px",
-  color: "green",
+  color: "#16a34a",
   fontWeight: "bold",
   whiteSpace: "nowrap",
 };
@@ -750,10 +449,10 @@ const formInputStyle = {
   height: "42px",
   lineHeight: "20px",
   borderRadius: "8px",
-  border: "1px solid #000000",
+  border: "1px solid #e2e8f0",
   fontSize: "14px",
   backgroundColor: "#ffffff",
-  color: "#000000",
+  color: "#0f172a",
   boxSizing: "border-box",
   appearance: "none",
   WebkitAppearance: "none",
@@ -798,9 +497,22 @@ const errorTextStyle = {
   fontSize: "0.75rem",
 };
 
+const loadAllStudentsButtonStyle = {
+  ...baseButtonStyle,
+  backgroundColor: "#0E7490",
+  color: "white",
+  borderColor: "#0E7490",
+};
+
 const addStudentButtonStyle = {
   ...baseButtonStyle,
-  backgroundColor: "#17a2b8",
+  backgroundColor: "#4F46E5",
+  color: "white",
+};
+
+const addStudentsBulkButtonStyle = {
+  ...baseButtonStyle,
+  backgroundColor: "#DB2777",
   color: "white",
 };
 
@@ -2473,7 +2185,7 @@ function Checking() {
           <button
             type="button"
             onClick={() => navigate("/students")}
-            style={inactiveButtonStyle}
+            style={loadAllStudentsButtonStyle}
           >
             Load All Students
           </button>
@@ -2490,7 +2202,7 @@ function Checking() {
               resetBulkModalState();
               setIsBulkModalVisible(true);
             }}
-            style={addStudentButtonStyle}
+            style={addStudentsBulkButtonStyle}
           >
             Add Students in Bulk
           </button>

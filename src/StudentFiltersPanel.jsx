@@ -134,8 +134,8 @@ const pillButtonBaseStyle = {
 
 const pillButtonSelectedStyle = {
   ...pillButtonBaseStyle,
-  background: '#2563eb',
-  borderColor: '#1e40af',
+  background: '#4F46E5',
+  borderColor: '#4338CA',
   color: 'white',
 };
 

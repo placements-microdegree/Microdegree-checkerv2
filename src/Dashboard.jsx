@@ -107,14 +107,18 @@ function Dashboard() {
   if (!isLoggedIn) {
     return (
       <div className="container">
-        <h2>MicroDegree Login</h2>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <div className="password-container">
+        <img src="/Logo.png" alt="MicroDegree" className="logo" />
+        <h2>Sign in</h2>
+
+        <div className="field-group">
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+        <div className="field-group password-container">
           <input
             type={showPassword ? "text" : "password"}
             placeholder="Password"
@@ -122,85 +126,32 @@ function Dashboard() {
             onChange={(e) => setPassword(e.target.value)}
           />
           <i
-            className="fa-solid fa-eye toggle-password"
+            className={`fa-solid ${showPassword ? "fa-eye-slash" : "fa-eye"} toggle-password`}
             onClick={() => setShowPassword(!showPassword)}
           ></i>
         </div>
-        <button onClick={handleEmailLogin}>Login</button>
-        <p>or</p>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            marginTop: "20px",
-          }}
-        >
-          <button
-            onClick={handleGoogleLogin}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              padding: "10px 20px",
-              backgroundColor: "#6c4eff",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-            }}
-          >
-            <img
-              src="https://developers.google.com/identity/images/g-logo.png"
-              alt="Google logo"
-              style={{ height: "20px", marginRight: "10px" }}
-            />
-            <span>Sign in with Google</span>
-          </button>
-        </div>
+        <button className="primary-button" onClick={handleEmailLogin}>
+          Login
+        </button>
+
+        <div className="divider">or</div>
+
+        <button className="google-button" onClick={handleGoogleLogin}>
+          <img
+            src="https://developers.google.com/identity/images/g-logo.png"
+            alt="Google logo"
+            style={{ height: "18px" }}
+          />
+          <span>Sign in with Google</span>
+        </button>
 
         {errorMessage && <div className="error">{errorMessage}</div>}
-        <h2 style={{ marginTop: "30px", color: "#5d5b5bff" }}>OTHER TOOL</h2>
-        <svg
-          className="down-arrow"
-          width="40"
-          height="40"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path d="M12 16L6 10H9V4H15V10H18L12 16Z" fill="currentColor" />
-        </svg>
-        <div
-          className="gmail-link"
-          onClick={handleClick}
-          style={{
-            marginTop: "10px",
-            color: "#000000ff",
-            backgroundColor: "#f0f0f0",
-            padding: "10px",
-            borderRadius: "5px",
-            textAlign: "center",
-            cursor: "pointer",
-            transition: "all 0.3s ease",
-            width: "200px",
-            userSelect: "none",
-            marginLeft: "23%",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.02)";
-            e.currentTarget.style.backgroundColor = "#6c5ce7";
-            e.currentTarget.style.color = "#ffffff";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.backgroundColor = "#f0f0f0";
-            e.currentTarget.style.color = "#050505ff";
-          }}
-        >
-          <span style={{ textDecoration: "none", color: "inherit" }}>
-            Gmail Aggregator
-          </span>
-        </div>
+
+        <div className="other-tool-divider">Other Tool</div>
+        <button className="secondary-link-button" onClick={handleClick}>
+          Gmail Aggregator
+        </button>
       </div>
     );
   }
@@ -208,7 +159,8 @@ function Dashboard() {
   // ✅ Dashboard Screen
   return (
     <div className="container">
-      <h2>Welcome to Dashboard</h2>
+      <img src="/Logo.png" alt="MicroDegree" className="logo" />
+      <h2>Welcome back</h2>
       <div className="cards">
         <div className="card">
           <Link to="/checking">🔍 MicroDegree Checker</Link>
@@ -223,9 +175,9 @@ function Dashboard() {
           </a>
         </div>
       </div>
-      <div className="back-button" onClick={handleLogout}>
+      <button className="back-button" onClick={handleLogout}>
         ← Logout
-      </div>
+      </button>
     </div>
   );
 }

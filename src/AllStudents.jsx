@@ -211,7 +211,7 @@ export default function AllStudents() {
     background: '#ffffff',
     cursor: 'pointer',
     fontWeight: 700,
-    color: '#2563eb',
+    color: '#4F46E5',
   };
 
   const bodyStyle = {
