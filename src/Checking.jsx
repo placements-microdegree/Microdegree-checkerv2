@@ -1207,7 +1207,7 @@ function Checking() {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: "array", cellDates: true });
+      const workbook = XLSX.read(arrayBuffer, { type: "array" });
       const firstSheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[firstSheetName];
       const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: true });
